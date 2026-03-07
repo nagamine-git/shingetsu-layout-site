@@ -51,6 +51,8 @@
 全 API ルートは Cloudflare Workers 上で実行される。
 環境変数・バインディングは `import { env } from 'cloudflare:workers'` でアクセスする。
 
+> **注意:** `TURNSTILE_SITE_KEY` は prerender されるクライアント HTML に埋め込む必要があるため、`cloudflare:workers` ではなく `import.meta.env.PUBLIC_TURNSTILE_SITE_KEY` でビルド時に参照する。`TURNSTILE_SECRET_KEY` 等のサーバー専用シークレットのみ `cloudflare:workers` を使用する。
+
 ### 3.1 `POST /api/subscribe`
 
 **リクエスト:**
@@ -58,10 +60,12 @@
 ```json
 {
   "email": "user@example.com",
-  "type": "newsletter" | "preregister",
+  "type": "newsletter",
   "turnstileToken": "..."
 }
 ```
+
+> `type` は `"newsletter"` または `"preregister"` のいずれか。
 
 **処理フロー:**
 
@@ -148,11 +152,11 @@ Resend Segments API + Contact Properties で管理する（Audiences API は dep
 ```typescript
 await resend.contacts.create({
   email: "user@example.com",
-  properties: {
+  customProperties: {
     type: "preregister",
     subscribed_at: new Date().toISOString(),
   },
-  segmentId: env.RESEND_SEGMENT_ID,
+  segmentIds: [{ id: env.RESEND_SEGMENT_ID }],
 });
 ```
 
@@ -197,7 +201,7 @@ src/
 | 項目 | 基準 |
 |------|------|
 | Lighthouse Performance | >= 95 |
-| 初回読み込み JS | < 50KB（Astro island 最小化） |
+| 初回読み込み JS | < 50KB（インライン `<script>` 最小化） |
 | レスポンシブ | mobile-first、375px 〜 1440px |
 | Turnstile | Managed mode |
 | OGP | 全ページに title, description, og:image を出力 |
@@ -240,7 +244,8 @@ export default defineConfig({
 
 ### 6.3 Rate Limiting
 
-v1 ではコード側の簡易チェックで実装し、本番投入後に Cloudflare Dashboard で Rate Limiting Rule を設定する。
+Workers はリクエストごとにステートレスなアイソレートで実行されるため、インメモリの簡易チェックでは Rate Limiting が機能しない。
+v1 では Cloudflare Dashboard の Rate Limiting Rule で制御し、コード側は 429 レスポンスの生成のみ担う。
 
 | エンドポイント | 閾値 |
 |---------------|------|

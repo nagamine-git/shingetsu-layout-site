@@ -26,13 +26,15 @@ pnpm dev
 
 ## 環境変数
 
-| 変数名 | 説明 |
-|--------|------|
-| `TURNSTILE_SITE_KEY` | Cloudflare Turnstile サイトキー |
-| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile シークレットキー |
-| `RESEND_API_KEY` | Resend API キー |
-| `RESEND_SEGMENT_ID` | Resend Segment ID（サブスクライバー管理用） |
-| `CONTACT_TO_EMAIL` | お問い合わせ通知の送信先メールアドレス |
+| 変数名 | スコープ | 説明 |
+|--------|---------|------|
+| `PUBLIC_TURNSTILE_SITE_KEY` | ビルド時（公開） | Cloudflare Turnstile サイトキー（クライアント HTML に埋め込まれる） |
+| `TURNSTILE_SECRET_KEY` | ランタイム（秘匿） | Cloudflare Turnstile シークレットキー |
+| `RESEND_API_KEY` | ランタイム（秘匿） | Resend API キー |
+| `RESEND_SEGMENT_ID` | ランタイム（秘匿） | Resend Segment ID（サブスクライバー管理用） |
+| `CONTACT_TO_EMAIL` | ランタイム（秘匿） | お問い合わせ通知の送信先メールアドレス |
+
+> `PUBLIC_` 接頭辞の変数は `import.meta.env` でビルド時にアクセスする。それ以外は `import { env } from 'cloudflare:workers'` でランタイムにアクセスする。
 
 ## デプロイ
 
