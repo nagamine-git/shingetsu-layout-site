@@ -1,0 +1,103 @@
+---
+import layoutData from "../data/layout.json";
+---
+
+<section id="layer-demo" class="py-24 px-4 bg-[var(--color-surface-2)]/40">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+        3層構造でかなを完全収録
+      </h2>
+      <p class="text-slate-400 max-w-xl mx-auto">
+        レイヤーを切り替えて、各キーに割り当てられたかな文字を確認できます。
+        ホームポジション（青色）から手を動かさず入力できます。
+      </p>
+    </div>
+
+    <!-- Layer tabs -->
+    <div class="flex justify-center gap-2 mb-8" role="tablist" aria-label="レイヤー切替">
+      {layoutData.layers.map((layer) => (
+        <button
+          class="layer-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-white/10 text-slate-400 hover:text-white hover:border-white/30"
+          data-layer={layer.id}
+          role="tab"
+          aria-selected={layer.id === 0 ? "true" : "false"}
+        >
+          {layer.label}
+        </button>
+      ))}
+    </div>
+
+    <!-- Keyboard grid -->
+    <div class="space-y-2" id="keyboard-display">
+      {layoutData.layers[0].keys.map((row, rowIndex) => (
+        <div
+          class="flex justify-center gap-1.5 layer-row"
+          style={rowIndex === 1 ? "padding-left: 1.5rem;" : rowIndex === 2 ? "padding-left: 3rem;" : ""}
+          data-row={rowIndex}
+        >
+          {row.map((char, colIndex) => {
+            const isHome = rowIndex === 1 && layoutData.homeRow.includes(colIndex);
+            return (
+              <div
+                class={`key-cell w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center text-lg font-medium transition-all duration-200 border ${isHome ? "border-brand-500/60 bg-brand-900/40 text-brand-200" : "border-white/10 bg-[var(--color-surface-2)] text-slate-300"}`}
+                data-col={colIndex}
+                data-row={rowIndex}
+              >
+                {char}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+
+    <p class="text-center text-xs text-slate-600 mt-4">
+      青色はホームポジション（人差し指〜小指）
+    </p>
+  </div>
+</section>
+
+<script>
+  import layoutJson from "../data/layout.json";
+
+  const layers = layoutJson.layers as Array<{
+    id: number;
+    label: string;
+    keys: string[][];
+  }>;
+  const homeRow = [3, 4, 5, 6];
+
+  function updateDisplay(layerId: number): void {
+    const layer = layers.find((l) => l.id === layerId);
+    if (!layer) return;
+
+    document.querySelectorAll<HTMLElement>(".key-cell").forEach((cell) => {
+      const row = parseInt(cell.dataset.row ?? "0");
+      const col = parseInt(cell.dataset.col ?? "0");
+      cell.textContent = layer.keys[row]?.[col] ?? "";
+    });
+
+    document.querySelectorAll<HTMLButtonElement>(".layer-btn").forEach((btn) => {
+      const isActive = parseInt(btn.dataset.layer ?? "0") === layerId;
+      btn.setAttribute("aria-selected", String(isActive));
+      if (isActive) {
+        btn.classList.add("bg-brand-600", "text-white", "border-brand-500");
+        btn.classList.remove("text-slate-400", "border-white/10");
+      } else {
+        btn.classList.remove("bg-brand-600", "text-white", "border-brand-500");
+        btn.classList.add("text-slate-400", "border-white/10");
+      }
+    });
+  }
+
+  document.querySelectorAll<HTMLButtonElement>(".layer-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const layerId = parseInt(btn.dataset.layer ?? "0");
+      updateDisplay(layerId);
+    });
+  });
+
+  // Initialize first layer as active
+  updateDisplay(0);
+</script>

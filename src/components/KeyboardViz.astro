@@ -1,0 +1,103 @@
+---
+import layoutData from "../data/layout.json";
+
+const fingerColors: Record<number, string> = {
+  0: "#f87171", // 左小指
+  1: "#fb923c", // 左薬指
+  2: "#facc15", // 左中指
+  3: "#4ade80", // 左人差し指
+  4: "#4ade80", // 左人差し指（内側）
+  5: "#60a5fa", // 右人差し指（内側）
+  6: "#60a5fa", // 右人差し指
+  7: "#facc15", // 右中指
+  8: "#fb923c", // 右薬指
+  9: "#f87171", // 右小指
+};
+
+const fingerLabels = ["左小", "左薬", "左中", "左人", "左人", "右人", "右人", "右中", "右薬", "右小"];
+const layer0 = layoutData.layers[0];
+---
+
+<section id="keyboard-viz" class="py-24 px-4">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+        指割り当て可視化
+      </h2>
+      <p class="text-slate-400 max-w-xl mx-auto">
+        色別に各指の担当キーを確認できます。ホームポジションへの帰還が容易な配置設計です。
+      </p>
+    </div>
+
+    <!-- SVG Keyboard -->
+    <div class="overflow-x-auto">
+      <svg
+        viewBox="0 0 680 220"
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-full max-w-2xl mx-auto block"
+        aria-label="新月配列 キーボード指割り当て図"
+        role="img"
+      >
+        {layer0.keys.map((row, rowIndex) =>
+          row.map((char, colIndex) => {
+            const offsetX = [0, 16, 32][rowIndex] ?? 0;
+            const x = colIndex * 64 + offsetX + 4;
+            const y = rowIndex * 68 + 4;
+            const color = fingerColors[colIndex] ?? "#94a3b8";
+            const isHome = rowIndex === 1 && layoutData.homeRow.includes(colIndex);
+            return (
+              <g key={`${rowIndex}-${colIndex}`}>
+                <rect
+                  x={x}
+                  y={y}
+                  width="58"
+                  height="56"
+                  rx="8"
+                  fill={isHome ? `${color}33` : "#1e293b"}
+                  stroke={isHome ? color : "#334155"}
+                  stroke-width={isHome ? "2" : "1"}
+                />
+                <text
+                  x={x + 29}
+                  y={y + 26}
+                  text-anchor="middle"
+                  fill={color}
+                  font-size="18"
+                  font-family="'Noto Sans JP', serif"
+                  font-weight={isHome ? "700" : "400"}
+                >
+                  {char}
+                </text>
+                <text
+                  x={x + 29}
+                  y={y + 44}
+                  text-anchor="middle"
+                  fill="#475569"
+                  font-size="9"
+                  font-family="sans-serif"
+                >
+                  {char !== "" ? fingerLabels[colIndex] : ""}
+                </text>
+              </g>
+            );
+          })
+        )}
+      </svg>
+    </div>
+
+    <!-- Legend -->
+    <div class="flex flex-wrap justify-center gap-3 mt-8">
+      {Object.entries(fingerColors)
+        .filter(([col]) => parseInt(col) < 8)
+        .map(([col, color]) => (
+          <div class="flex items-center gap-1.5 text-xs text-slate-400">
+            <span
+              class="w-3 h-3 rounded-sm inline-block"
+              style={`background-color: ${color};`}
+            ></span>
+            {fingerLabels[parseInt(col)]}
+          </div>
+        ))}
+    </div>
+  </div>
+</section>
