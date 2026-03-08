@@ -30,10 +30,5 @@
       ]
     }
   ],
-  "homeRow": [3, 4, 5, 6],
-  "stats": {
-    "totalKana": 46,
-    "avgStrokes": 1.2,
-    "sameFingerRate": 0.04
-  }
+  "homeRow": [3, 4, 5, 6]
 }

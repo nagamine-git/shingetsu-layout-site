@@ -1,4 +1,15 @@
 ---
+const qwerty = [
+  ["q","w","e","r","t","y","u","i","o","p"],
+  ["a","s","d","f","g","h","j","k","l",";"],
+  ["z","x","c","v","b","n","m",",",".","/"],
+];
+const kana = [
+  ["た","て","い","す","か","ん","な","に","ら","せ"],
+  ["ち","と","し","は","き","く","の","り","れ","つ"],
+  ["さ","そ","ひ","ふ","こ","ま","も","ね","ろ","わ"],
+];
+const homeRowCols = [3, 4, 5, 6];
 ---
 
 <section class="relative min-h-screen flex flex-col items-center justify-center pt-14 px-4 overflow-hidden">
@@ -19,8 +30,8 @@
     </h1>
 
     <p class="text-lg sm:text-xl text-slate-300 mb-10 max-w-xl mx-auto">
-      新月配列は、JIS かなと同等の 46 文字を<strong class="text-white">わずか 30 キー</strong>に収め、
-      ホームポジションから指を離さず高速に日本語を入力できる革新的な配列です。
+      新月配列は、主要なかな文字を<strong class="text-white">30 キー</strong>に収め、
+      ホームポジションを崩さずに日本語を入力できるかな配列です。
     </p>
 
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -39,43 +50,57 @@
     </div>
   </div>
 
-  <!-- SVG keyboard illustration -->
-  <div class="relative z-10 mt-16 w-full max-w-2xl mx-auto opacity-60" aria-hidden="true">
-    <svg viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg" class="w-full drop-shadow-2xl">
-      <!-- Row 0 -->
-      {Array.from({length: 10}, (_, i) => (
-        <g key={i} transform={`translate(${i * 58 + 4}, 4)`}>
-          <rect width="52" height="44" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-          <text x="26" y="28" text-anchor="middle" fill="#94a3b8" font-size="16" font-family="serif">
-            {['た','て','い','す','か','ん','な','に','ら','せ'][i]}
-          </text>
-        </g>
-      ))}
-      <!-- Row 1 -->
-      {Array.from({length: 10}, (_, i) => (
-        <g key={i} transform={`translate(${i * 58 + 20}, 56)`}>
-          <rect width="52" height="44" rx="6" fill={i >= 3 && i <= 6 ? '#1e3a5f' : '#1e293b'} stroke={i >= 3 && i <= 6 ? '#3b82f6' : '#334155'} stroke-width="1"/>
-          <text x="26" y="28" text-anchor="middle" fill={i >= 3 && i <= 6 ? '#93c5fd' : '#94a3b8'} font-size="16" font-family="serif">
-            {['ち','と','し','は','き','く','の','り','れ','つ'][i]}
-          </text>
-        </g>
-      ))}
-      <!-- Row 2 -->
-      {Array.from({length: 10}, (_, i) => (
-        <g key={i} transform={`translate(${i * 58 + 36}, 108)`}>
-          <rect width="52" height="44" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-          <text x="26" y="28" text-anchor="middle" fill="#94a3b8" font-size="16" font-family="serif">
-            {['さ','そ','ひ','ふ','こ','ま','も','ね','ろ','わ'][i]}
-          </text>
-        </g>
-      ))}
+  <!--
+    SVG keyboard illustration: dual-legend per key
+    Upper legend = Layer 1 (かな), lower-right = Layer 0 (QWERTY)
+    viewBox: 3 rows × (56px tall, 62px pitch) + row offsets (0/20/40px)
+    Max x = 9×62 + 52 + 40 = 650  Max y = 132 + 60 = 192
+  -->
+  <div class="relative z-10 mt-14 w-full max-w-2xl mx-auto" aria-hidden="true">
+    <svg
+      viewBox="0 0 650 196"
+      xmlns="http://www.w3.org/2000/svg"
+      class="w-full drop-shadow-2xl opacity-80"
+      role="img"
+      aria-label="新月配列キーボード図（上段：かな、右下：QWERTY）"
+    >
+      {qwerty.map((row, rowIdx) =>
+        row.map((q, colIdx) => {
+          const offsetX = rowIdx * 20;
+          const x = colIdx * 62 + offsetX + 4;
+          const y = rowIdx * 68 + 4;
+          const isHome = rowIdx === 1 && homeRowCols.includes(colIdx);
+          const bgFill = isHome ? "#1e3a5f" : "#1e293b";
+          const strokeCol = isHome ? "#3b82f6" : "#334155";
+          const kanaColor = isHome ? "#93c5fd" : "#cbd5e1";
+          return (
+            <g key={`${rowIdx}-${colIdx}`}>
+              <rect x={x} y={y} width="56" height="60" rx="7"
+                fill={bgFill} stroke={strokeCol} stroke-width={isHome ? "1.5" : "1"} />
+              {/* kana — center, large */}
+              <text x={x + 28} y={y + 32} text-anchor="middle"
+                fill={kanaColor} font-size="19" font-family="'Noto Sans JP', serif" font-weight="500">
+                {kana[rowIdx]?.[colIdx]}
+              </text>
+              {/* QWERTY — bottom-right, small */}
+              <text x={x + 50} y={y + 54} text-anchor="end"
+                fill="#475569" font-size="10" font-family="ui-monospace, monospace">
+                {q}
+              </text>
+            </g>
+          );
+        })
+      )}
     </svg>
+    <p class="text-center text-xs text-slate-600 mt-2">
+      大：かな（Layer 1）　右下小：QWERTY（Layer 0）　青：ホームポジション
+    </p>
   </div>
 
   <!-- Scroll indicator -->
-  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-500 text-xs animate-bounce">
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-slate-600 text-xs animate-bounce">
     <span>スクロール</span>
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
       <path d="M8 12L2 6h12z"/>
     </svg>
   </div>

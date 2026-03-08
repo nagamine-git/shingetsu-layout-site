@@ -46,17 +46,17 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
     />
   </head>
-  <body>
+  <body class="overflow-x-hidden">
     <header class="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/80 border-b border-white/10">
-      <nav class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <a href="/" class="font-bold text-lg tracking-tight text-white">
+      <nav class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+        <a href="/" class="font-bold text-base sm:text-lg tracking-tight text-white shrink-0">
           新月配列
         </a>
-        <div class="flex items-center gap-6 text-sm">
-          <a href="/#features" class="text-slate-400 hover:text-white transition-colors">特徴</a>
-          <a href="/#get-started" class="text-slate-400 hover:text-white transition-colors">導入方法</a>
-          <a href="/blog" class="text-slate-400 hover:text-white transition-colors">ブログ</a>
-          <a href="/contact" class="text-slate-400 hover:text-white transition-colors">お問い合わせ</a>
+        <div class="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm overflow-x-auto">
+          <a href="/#features" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">特徴</a>
+          <a href="/#get-started" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">導入方法</a>
+          <a href="/blog" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">ブログ</a>
+          <a href="/contact" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap hidden sm:inline">お問い合わせ</a>
         </div>
       </nav>
     </header>

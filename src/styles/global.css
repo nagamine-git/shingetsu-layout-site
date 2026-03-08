@@ -24,6 +24,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
@@ -31,5 +32,12 @@
     background-color: var(--color-surface);
     color: #e2e8f0;
     line-height: 1.7;
+    overflow-x: hidden;
+    /* prevent inline pre from causing horizontal scroll */
+    min-width: 0;
+  }
+
+  pre, code {
+    max-width: 100%;
   }
 }
