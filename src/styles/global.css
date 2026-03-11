@@ -7,7 +7,7 @@
   --color-brand-100: #dde7ff;
   --color-brand-200: #c3d0ff;
   --color-brand-300: #9ab0ff;
-  --color-brand-400: #6d87ff;
+  --color-brand-400: #8fa3ff;
   --color-brand-500: #4a5eff;
   --color-brand-600: #2e3de8;
   --color-brand-700: #2230ce;
@@ -19,6 +19,9 @@
   --color-surface: #0f172a;
   --color-surface-2: #1e293b;
   --color-surface-3: #334155;
+
+  /* Override slate-500 for better contrast on dark backgrounds */
+  --color-slate-500: #94a3b8;
 }
 
 @layer base {
