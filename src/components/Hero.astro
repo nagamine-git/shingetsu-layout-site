@@ -1,15 +1,15 @@
 ---
-const qwerty = [
-  ["q","w","e","r","t","y","u","i","o","p"],
-  ["a","s","d","f","g","h","j","k","l",";"],
-  ["z","x","c","v","b","n","m",",",".","/"],
-];
 const kana = [
-  ["た","て","い","す","か","ん","な","に","ら","せ"],
-  ["ち","と","し","は","き","く","の","り","れ","つ"],
-  ["さ","そ","ひ","ふ","こ","ま","も","ね","ろ","わ"],
+  ["そ","こ","し","て","ょ","つ","ん","い","の","り"],
+  ["は","か","★","と","た","く","う","☆","゛゜小","き"],
+  ["す","け","に","な","さ","っ","る","、","。","・"],
 ];
-const homeRowCols = [3, 4, 5, 6];
+const kana2 = [
+  ["ゆ","ひ","ほ","ふ","め","ぬ","え","み","や","ー"],
+  ["あ","を","ら","れ","よ","ま","お","も","わ","ち"],
+  ["ね","へ","せ","ゅ","ゃ","む","ろ","","",""],
+];
+const homeRowCols = [0, 1, 2, 3, 6, 7, 8, 9];
 ---
 
 <section class="relative min-h-screen flex flex-col items-center justify-center pt-14 px-4 overflow-hidden">
@@ -31,7 +31,7 @@ const homeRowCols = [3, 4, 5, 6];
 
     <p class="text-lg sm:text-xl text-slate-300 mb-10 max-w-xl mx-auto">
       新月配列は、主要なかな文字を<strong class="text-white">30 キー</strong>に収め、
-      ホームポジションを崩さずに日本語を入力できるかな配列です。
+      ホームポジションを基点に指の移動を最小限で日本語を入力できるかな配列です。
     </p>
 
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -52,20 +52,20 @@ const homeRowCols = [3, 4, 5, 6];
 
   <!--
     SVG keyboard illustration: dual-legend per key
-    Upper legend = Layer 1 (かな), lower-right = Layer 0 (QWERTY)
+    Center large = Layer 1 (かな), bottom-right small = Layer 2 (拡張)
     viewBox: 3 rows × (56px tall, 62px pitch) + row offsets (0/20/40px)
-    Max x = 9×62 + 52 + 40 = 650  Max y = 132 + 60 = 192
+    Max x = 9×62 + 40 + 4 + 56 = 658  Max y = 2×68 + 4 + 60 = 200
   -->
   <div class="relative z-10 mt-14 w-full max-w-2xl mx-auto" aria-hidden="true">
     <svg
-      viewBox="0 0 650 196"
+      viewBox="0 0 662 204"
       xmlns="http://www.w3.org/2000/svg"
       class="w-full drop-shadow-2xl opacity-80"
       role="img"
-      aria-label="新月配列キーボード図（上段：かな、右下：QWERTY）"
+      aria-label="新月配列キーボード図（中央大：かな Layer 1、右下小：拡張 Layer 2）"
     >
-      {qwerty.map((row, rowIdx) =>
-        row.map((q, colIdx) => {
+      {kana.map((row, rowIdx) =>
+        row.map((k1, colIdx) => {
           const offsetX = rowIdx * 20;
           const x = colIdx * 62 + offsetX + 4;
           const y = rowIdx * 68 + 4;
@@ -73,27 +73,31 @@ const homeRowCols = [3, 4, 5, 6];
           const bgFill = isHome ? "#1e3a5f" : "#1e293b";
           const strokeCol = isHome ? "#3b82f6" : "#334155";
           const kanaColor = isHome ? "#93c5fd" : "#cbd5e1";
+          const k2 = kana2[rowIdx]?.[colIdx] ?? "";
           return (
             <g key={`${rowIdx}-${colIdx}`}>
               <rect x={x} y={y} width="56" height="60" rx="7"
                 fill={bgFill} stroke={strokeCol} stroke-width={isHome ? "1.5" : "1"} />
-              {/* kana — center, large */}
-              <text x={x + 28} y={y + 32} text-anchor="middle"
-                fill={kanaColor} font-size="19" font-family="'Noto Sans JP', serif" font-weight="500">
-                {kana[rowIdx]?.[colIdx]}
+              {/* Layer 1 かな — center, large */}
+              <text x={x + 28} y={k1.length > 1 ? y + 28 : y + 34} text-anchor="middle"
+                fill={kanaColor} font-size={k1.length > 1 ? "11" : "19"} letter-spacing={k1.length > 1 ? "1" : "0"}
+                font-family="'Noto Sans JP', serif" font-weight="500">
+                {k1}
               </text>
-              {/* QWERTY — bottom-right, small */}
-              <text x={x + 50} y={y + 54} text-anchor="end"
-                fill="#475569" font-size="10" font-family="ui-monospace, monospace">
-                {q}
-              </text>
+              {/* Layer 2 拡張 — bottom-right */}
+              {k2 && (
+                <text x={x + 52} y={y + 55} text-anchor="end"
+                  fill="#94a3b8" font-size="14" font-family="'Noto Sans JP', serif" font-weight="500">
+                  {k2}
+                </text>
+              )}
             </g>
           );
         })
       )}
     </svg>
     <p class="text-center text-xs text-slate-600 mt-2">
-      大：かな（Layer 1）　右下小：QWERTY（Layer 0）　青：ホームポジション
+      大：かな（Layer 1）　右下小：拡張（Layer 2）　青：ホームポジション基点キー
     </p>
   </div>
 

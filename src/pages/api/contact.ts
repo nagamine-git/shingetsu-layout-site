@@ -30,6 +30,9 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: "missing_token" }), { status: 400 });
   }
 
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
   const cfEnv = env as Record<string, string>;
   const secretKey = cfEnv["TURNSTILE_SECRET_KEY"] ?? "";
   const resendApiKey = cfEnv["RESEND_API_KEY"] ?? "";
@@ -46,7 +49,7 @@ export const POST: APIRoute = async ({ request }) => {
       to: contactToEmail,
       replyTo: email,
       subject: `【お問い合わせ】${name} 様より`,
-      html: `<p><strong>名前:</strong> ${name}</p><p><strong>メール:</strong> ${email}</p><p><strong>内容:</strong></p><pre>${message}</pre>`,
+      html: `<p><strong>名前:</strong> ${esc(name)}</p><p><strong>メール:</strong> ${esc(email)}</p><p><strong>内容:</strong></p><pre>${esc(message)}</pre>`,
     });
 
     await sendEmail(resendApiKey, {
