@@ -1,0 +1,132 @@
+---
+const TURNSTILE_SITE_KEY = import.meta.env.TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA";
+---
+
+<section id="subscribe" class="py-24 px-4">
+  <div class="max-w-xl mx-auto text-center">
+    <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+      アップデートを受け取る
+    </h2>
+    <p class="text-slate-400 mb-10">
+      新月配列の最新情報、チュートリアル、リリースノートをメールでお届けします。
+      スパムは送りません。いつでも解除できます。
+    </p>
+
+    <div class="rounded-2xl border border-white/10 bg-[var(--color-surface-2)] p-8">
+      <!-- Type selector -->
+      <div class="flex gap-3 mb-6 justify-center">
+        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
+          <input type="radio" name="subType" value="newsletter" checked class="accent-brand-500" />
+          ニュースレター
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
+          <input type="radio" name="subType" value="preregister" class="accent-brand-500" />
+          事前登録
+        </label>
+      </div>
+
+      <form id="subscribe-form" novalidate class="space-y-4">
+        <div>
+          <label for="sub-email" class="block text-left text-sm text-slate-400 mb-1">
+            メールアドレス <span class="text-red-400">*</span>
+          </label>
+          <input
+            id="sub-email"
+            type="email"
+            name="email"
+            required
+            placeholder="you@example.com"
+            class="w-full px-4 py-3 rounded-lg bg-[var(--color-surface)] border border-white/10 text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition-colors"
+          />
+        </div>
+
+        <!-- Turnstile widget -->
+        <div
+          class="cf-turnstile mx-auto"
+          data-sitekey={TURNSTILE_SITE_KEY}
+          data-theme="dark"
+          data-callback="onTurnstileSuccess"
+          data-error-callback="onTurnstileError"
+        ></div>
+
+        <button
+          id="sub-btn"
+          type="submit"
+          disabled
+          class="w-full py-3 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-all duration-200"
+        >
+          登録する
+        </button>
+
+        <p id="sub-msg" class="text-sm hidden"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Turnstile script -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+<script>
+  let turnstileToken = "";
+
+  (window as Record<string, unknown>)["onTurnstileSuccess"] = (token: string) => {
+    turnstileToken = token;
+    const btn = document.getElementById("sub-btn") as HTMLButtonElement | null;
+    if (btn) btn.disabled = false;
+  };
+
+  (window as Record<string, unknown>)["onTurnstileError"] = () => {
+    turnstileToken = "";
+    const btn = document.getElementById("sub-btn") as HTMLButtonElement | null;
+    if (btn) btn.disabled = true;
+  };
+
+  const form = document.getElementById("subscribe-form") as HTMLFormElement | null;
+  const msg = document.getElementById("sub-msg") as HTMLElement | null;
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!form || !msg) return;
+
+    const emailEl = form.querySelector<HTMLInputElement>("#sub-email");
+    const typeEl = form.querySelector<HTMLInputElement>('input[name="subType"]:checked');
+    const btn = form.querySelector<HTMLButtonElement>("#sub-btn");
+
+    if (!emailEl || !typeEl || !btn) return;
+
+    btn.disabled = true;
+    btn.textContent = "送信中…";
+
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailEl.value,
+          type: typeEl.value,
+          turnstileToken,
+        }),
+      });
+
+      if (res.ok) {
+        msg.textContent = "登録完了しました！確認メールをご確認ください。";
+        msg.className = "text-sm text-green-400";
+        form.reset();
+        turnstileToken = "";
+      } else {
+        const data = (await res.json()) as { error?: string };
+        msg.textContent = data.error === "verification_failed"
+          ? "認証に失敗しました。ページを再読み込みしてお試しください。"
+          : "エラーが発生しました。しばらくしてからお試しください。";
+        msg.className = "text-sm text-red-400";
+      }
+    } catch {
+      msg.textContent = "通信エラーが発生しました。";
+      msg.className = "text-sm text-red-400";
+    }
+
+    msg.classList.remove("hidden");
+    btn.textContent = "登録する";
+  });
+</script>

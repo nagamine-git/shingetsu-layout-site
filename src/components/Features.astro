@@ -1,0 +1,66 @@
+---
+const features = [
+  {
+    icon: "⌨️",
+    title: "30キー完結",
+    badge: "コンパクト",
+    description:
+      "主要なかなを 30 キー（英字 3 行）に収め、数字行に手を伸ばさず入力できます。ホームポジション周辺にキーを集約した設計が、指の移動距離を最小限に抑えます。",
+    stat: "30",
+    statLabel: "キーに収録",
+  },
+  {
+    icon: "⚡",
+    title: "1打鍵入力",
+    badge: "直接入力",
+    description:
+      "かな 1 文字 = 原則 1 キー。Layer 切替キーを押しながら打鍵するだけで入力でき、ローマ字のような複数打鍵が不要です。",
+    stat: "1",
+    statLabel: "打鍵/文字（清音）",
+  },
+  {
+    icon: "🧩",
+    title: "3層構造設計",
+    badge: "柔軟",
+    description:
+      "Layer 0（英字）/ Layer 1（かな清音）/ Layer 2（濁音・半濁音）の 3 層で文字をカバー。Karabiner-Elements（macOS）または hazkey（Win/Linux）で導入できます。",
+    stat: "3",
+    statLabel: "レイヤー構成",
+  },
+];
+---
+
+<section id="features" class="py-24 px-4">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+        なぜ新月配列なのか
+      </h2>
+      <p class="text-slate-400 max-w-xl mx-auto">
+        従来のローマ字入力・JIS かな入力の課題を根本から解決する、
+        シンプルな設計思想。
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      {features.map((f) => (
+        <div class="group relative rounded-2xl border border-white/10 bg-[var(--color-surface-2)] p-6 hover:border-brand-500/40 transition-all duration-300 hover:-translate-y-1">
+          <div class="flex items-start justify-between mb-4">
+            <span class="text-3xl" aria-hidden="true">{f.icon}</span>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/20">
+              {f.badge}
+            </span>
+          </div>
+
+          <h3 class="text-xl font-bold text-white mb-2">{f.title}</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-6">{f.description}</p>
+
+          <div class="mt-auto pt-4 border-t border-white/10 flex items-baseline gap-2">
+            <span class="text-3xl font-bold text-brand-400">{f.stat}</span>
+            <span class="text-sm text-slate-500">{f.statLabel}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
