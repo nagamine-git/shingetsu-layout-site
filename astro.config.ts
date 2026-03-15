@@ -1,9 +1,11 @@
 import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
 import tailwindcss from "@tailwindcss/vite";
+import sitemap from "@astrojs/sitemap";
 
 export default defineConfig({
   adapter: cloudflare(),
+  integrations: [sitemap()],
   vite: {
     plugins: [tailwindcss()],
     build: {
@@ -11,5 +13,5 @@ export default defineConfig({
       minify: "esbuild",
     },
   },
-  site: "https://shingetsu.pages.dev",
+  site: "https://shingetsu-layout.com",
 });

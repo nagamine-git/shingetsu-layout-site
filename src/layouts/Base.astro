@@ -5,15 +5,33 @@ interface Props {
   title: string;
   description: string;
   ogImage?: string;
+  robots?: string;
 }
 
 const {
   title,
   description,
   ogImage = "/og-default.png",
+  robots = "index, follow",
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": "https://shingetsu-layout.com/#website",
+  name: "新月配列",
+  url: "https://shingetsu-layout.com",
+  description: "JIS かなの 46 文字を 30 キーに収め、ホームポジションから指を離さず高速に日本語を入力できるキーボード配列",
+  inLanguage: "ja",
+  publisher: {
+    "@type": "Person",
+    "@id": "https://shingetsu-layout.com/#author",
+    name: "nagamine",
+    url: "https://github.com/nagamine-git",
+  },
+};
 ---
 
 <!doctype html>
@@ -23,6 +41,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="canonical" href={canonicalURL} />
+    <meta name="robots" content={robots} />
 
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -33,6 +52,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={new URL(ogImage, Astro.site)} />
+    <meta property="og:locale" content="ja_JP" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
@@ -42,9 +62,20 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
+    />
+    <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap"
     />
+
+    <!-- WebSite JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+
+    <!-- Page-specific head content (JSON-LD etc.) -->
+    <slot name="head" />
   </head>
   <body class="overflow-x-hidden">
     <header class="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/80 border-b border-white/10">

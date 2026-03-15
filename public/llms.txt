@@ -1,0 +1,30 @@
+# 新月配列 (Shingetsu Layout)
+
+> 新月配列は、JIS かなの 46 文字を 30 キーに収め、ホームポジションから指を離さず高速に日本語を入力できるキーボード配列です。
+
+## サイトについて
+
+- URL: https://shingetsu-layout.com
+- 言語: 日本語
+- 作者: nagamine (https://github.com/nagamine-git)
+- GitHub: https://github.com/nagamine-git/shingetsu-layout
+
+## 主要ページ
+
+- [トップページ](https://shingetsu-layout.com/) — 新月配列の概要、特徴、導入方法
+- [ブログ](https://shingetsu-layout.com/blog) — 技術記事・設計解説
+- [お問い合わせ](https://shingetsu-layout.com/contact) — 連絡先フォーム
+
+## 新月配列の特徴
+
+- **30キー完結**: JIS かな 46 文字すべてを 30 キーに収める
+- **1文字1打鍵**: 清音はかな 1 文字 = 1 打鍵（ローマ字の 2 打鍵に対して優位）
+- **3層構造**: Layer 0（英字・QWERTY互換）/ Layer 1（かな清音）/ Layer 2（濁音・半濁音）
+- **ホームポジション維持**: 頻出かなをホームポジション 8 キーに集中配置
+
+## インストール
+
+- macOS: Karabiner-Elements (Homebrew 経由)
+- Windows / Linux: hazkey
+
+詳細は [GitHub リポジトリ README](https://github.com/nagamine-git/shingetsu-layout) を参照してください。
