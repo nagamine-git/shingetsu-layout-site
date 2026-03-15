@@ -58,6 +58,10 @@ const websiteJsonLd = {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={new URL(ogImage, Astro.site)} />
 
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//challenges.cloudflare.com" />
+    <link rel="dns-prefetch" href="//static.cloudflareinsights.com" />
+
     <!-- Fonts: non-render-blocking (media="print" trick) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
