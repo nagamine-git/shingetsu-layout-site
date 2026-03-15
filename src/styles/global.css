@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --font-sans: "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
@@ -22,6 +23,50 @@
 
   /* Override slate-500 for better contrast on dark backgrounds */
   --color-slate-500: #94a3b8;
+}
+
+/* Prose customization for Japanese blog posts */
+.prose {
+  --tw-prose-body: #cbd5e1;
+  --tw-prose-headings: #f1f5f9;
+  --tw-prose-lead: #94a3b8;
+  --tw-prose-links: #8fa3ff;
+  --tw-prose-bold: #f1f5f9;
+  --tw-prose-counters: #94a3b8;
+  --tw-prose-bullets: #475569;
+  --tw-prose-hr: #1e293b;
+  --tw-prose-quotes: #f1f5f9;
+  --tw-prose-quote-borders: #334155;
+  --tw-prose-captions: #64748b;
+  --tw-prose-code: #86efac;
+  --tw-prose-pre-code: #e2e8f0;
+  --tw-prose-pre-bg: #1e293b;
+  --tw-prose-th-borders: #334155;
+  --tw-prose-td-borders: #1e293b;
+  font-size: 1.0625rem;   /* 17px — 日本語は少し大きめが読みやすい */
+  line-height: 1.9;        /* 日本語に適した行間 */
+}
+
+.prose h2 {
+  margin-top: 2.5em;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid #1e293b;
+}
+
+.prose h3 {
+  margin-top: 2em;
+}
+
+.prose p {
+  letter-spacing: 0.01em;
+}
+
+.prose table {
+  font-size: 0.9em;
+}
+
+.prose th {
+  background-color: #1e293b;
 }
 
 @layer base {
