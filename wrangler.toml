@@ -2,6 +2,3 @@ name = "shingetsu-layout-site"
 compatibility_date = "2024-11-18"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./dist"
-
-[vars]
-TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB"
