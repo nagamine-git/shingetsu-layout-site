@@ -1,15 +1,14 @@
 ---
+import layoutData from "../data/layout.json";
+
+// Layer 1 keys with combined modifier label for SVG display (differs from layout.json)
 const kana = [
   ["そ","こ","し","て","ょ","つ","ん","い","の","り"],
   ["は","か","★","と","た","く","う","☆","゛゜小","き"],
   ["す","け","に","な","さ","っ","る","、","。","・"],
 ];
-const kana2 = [
-  ["ゆ","ひ","ほ","ふ","め","ぬ","え","み","や","ー"],
-  ["あ","を","ら","れ","よ","ま","お","も","わ","ち"],
-  ["ね","へ","せ","ゅ","ゃ","む","ろ","","",""],
-];
-const homeRowCols = [0, 1, 2, 3, 6, 7, 8, 9];
+const kana2 = layoutData.layers[2].keys;
+const homeRowCols = layoutData.homeRow;
 ---
 
 <section class="relative min-h-screen flex flex-col items-center justify-center pt-14 px-4 overflow-hidden">
@@ -96,13 +95,13 @@ const homeRowCols = [0, 1, 2, 3, 6, 7, 8, 9];
         })
       )}
     </svg>
-    <p class="text-center text-xs text-slate-600 mt-2">
+    <p class="text-center text-xs text-slate-500 mt-2">
       大：かな（Layer 1）　右下小：拡張（Layer 2）　青：ホームポジション基点キー
     </p>
   </div>
 
   <!-- Scroll indicator -->
-  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-slate-600 text-xs animate-bounce">
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-slate-500 text-xs animate-bounce">
     <span>スクロール</span>
     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
       <path d="M8 12L2 6h12z"/>

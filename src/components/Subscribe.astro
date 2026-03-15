@@ -64,8 +64,24 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
   </div>
 </section>
 
-<!-- Turnstile script -->
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+  // Turnstile script はスクロールで Subscribe セクションが近づいてから遅延ロード
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        const s = document.createElement("script");
+        s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+        s.async = true;
+        s.defer = true;
+        document.head.appendChild(s);
+        observer.disconnect();
+      }
+    },
+    { rootMargin: "200px" }
+  );
+  const section = document.getElementById("subscribe");
+  if (section) observer.observe(section);
+</script>
 
 <script>
   let turnstileToken = "";

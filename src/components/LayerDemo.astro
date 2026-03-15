@@ -52,7 +52,7 @@ import layoutData from "../data/layout.json";
       ))}
     </div>
 
-    <p class="text-center text-xs text-slate-600 mt-4">
+    <p class="text-center text-xs text-slate-500 mt-4">
       青色はホームポジション（人差し指〜小指）を基点とするキー
     </p>
   </div>
@@ -66,7 +66,7 @@ import layoutData from "../data/layout.json";
     label: string;
     keys: string[][];
   }>;
-  const homeRow = [0, 1, 2, 3, 6, 7, 8, 9];
+  const homeRow = layoutJson.homeRow as number[];
 
   function updateDisplay(layerId: number): void {
     const layer = layers.find((l) => l.id === layerId);

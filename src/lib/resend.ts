@@ -6,44 +6,34 @@ interface EmailPayload {
   html: string;
 }
 
-export async function sendEmail(apiKey: string, payload: EmailPayload): Promise<void> {
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const error = await res.text();
-    throw new Error(`Resend API error: ${res.status} ${error}`);
-  }
-}
-
 interface ContactPayload {
   email: string;
   segmentId: string;
   properties: Record<string, string>;
 }
 
-export async function createContact(apiKey: string, payload: ContactPayload): Promise<void> {
-  const res = await fetch("https://api.resend.com/contacts", {
+async function resendPost(apiKey: string, path: string, body: unknown): Promise<void> {
+  const res = await fetch(`https://api.resend.com${path}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      email: payload.email,
-      segment_id: payload.segmentId,
-      properties: payload.properties,
-    }),
+    body: JSON.stringify(body),
   });
-
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(`Resend contacts API error: ${res.status} ${error}`);
+    throw new Error(`Resend API error (${path}): ${res.status} ${await res.text()}`);
   }
+}
+
+export function sendEmail(apiKey: string, payload: EmailPayload): Promise<void> {
+  return resendPost(apiKey, "/emails", payload);
+}
+
+export function createContact(apiKey: string, payload: ContactPayload): Promise<void> {
+  return resendPost(apiKey, "/contacts", {
+    email: payload.email,
+    segment_id: payload.segmentId,
+    properties: payload.properties,
+  });
 }
