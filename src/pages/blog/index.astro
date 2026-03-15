@@ -19,17 +19,29 @@ const allTags = [...new Set(posts.flatMap((p) => p.data.tags))];
 
     {allTags.length > 0 && (
       <div class="flex flex-wrap gap-2 mb-8">
+        <button
+          class="tag-filter px-3 py-1 rounded-full border text-xs transition-colors bg-brand-500/20 border-brand-500/40 text-brand-300"
+          data-tag=""
+        >
+          すべて
+        </button>
         {allTags.map((tag) => (
-          <span class="px-3 py-1 rounded-full bg-[var(--color-surface-2)] border border-white/10 text-xs text-slate-400">
+          <button
+            class="tag-filter px-3 py-1 rounded-full border text-xs transition-colors bg-[var(--color-surface-2)] border-white/10 text-slate-400 hover:border-brand-500/40 hover:text-brand-300"
+            data-tag={tag}
+          >
             #{tag}
-          </span>
+          </button>
         ))}
       </div>
     )}
 
     <div class="space-y-6">
       {posts.map((post) => (
-        <article class="rounded-xl border border-white/10 bg-[var(--color-surface-2)] p-6 hover:border-brand-500/30 transition-all duration-200 hover:-translate-y-0.5">
+        <article
+          class="post-card rounded-xl border border-white/10 bg-[var(--color-surface-2)] p-6 hover:border-brand-500/30 transition-all duration-200 hover:-translate-y-0.5"
+          data-tags={post.data.tags.join(",")}
+        >
           <a href={`/blog/${post.id}`} class="block">
             <div class="flex flex-wrap gap-2 mb-2">
               {post.data.tags.map((tag) => (
@@ -60,3 +72,42 @@ const allTags = [...new Set(posts.flatMap((p) => p.data.tags))];
     )}
   </div>
 </Base>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>(".tag-filter");
+  const cards = document.querySelectorAll<HTMLElement>(".post-card");
+
+  function applyFilter(tag: string) {
+    buttons.forEach((btn) => {
+      const active = btn.dataset.tag === tag;
+      btn.classList.toggle("bg-brand-500/20", active);
+      btn.classList.toggle("border-brand-500/40", active);
+      btn.classList.toggle("text-brand-300", active);
+      btn.classList.toggle("bg-[var(--color-surface-2)]", !active);
+      btn.classList.toggle("border-white/10", !active);
+      btn.classList.toggle("text-slate-400", !active);
+    });
+
+    cards.forEach((card) => {
+      const tags = card.dataset.tags?.split(",") ?? [];
+      card.style.display = !tag || tags.includes(tag) ? "" : "none";
+    });
+
+    // URLにタグを反映（ブラウザバック対応）
+    const url = new URL(window.location.href);
+    if (tag) {
+      url.searchParams.set("tag", tag);
+    } else {
+      url.searchParams.delete("tag");
+    }
+    history.replaceState(null, "", url.toString());
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => applyFilter(btn.dataset.tag ?? ""));
+  });
+
+  // ページ読み込み時にURLのtagパラメータを反映
+  const initialTag = new URL(window.location.href).searchParams.get("tag") ?? "";
+  if (initialTag) applyFilter(initialTag);
+</script>
