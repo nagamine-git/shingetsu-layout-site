@@ -5,7 +5,8 @@ import sitemap from "@astrojs/sitemap";
 
 export default defineConfig({
   adapter: cloudflare(),
-  integrations: [sitemap()],
+  integrations: [sitemap({ filter: (page) => !page.includes("/contact/") })],
+  build: { inlineStylesheets: "always" },
   vite: {
     plugins: [tailwindcss()],
     build: {

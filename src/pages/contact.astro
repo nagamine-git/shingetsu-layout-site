@@ -142,10 +142,12 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
           ? "認証に失敗しました。ページを再読み込みしてお試しください。"
           : "エラーが発生しました。しばらくしてからお試しください。";
         msg.className = "text-sm text-red-400";
+        btn.disabled = false;
       }
     } catch {
       msg.textContent = "通信エラーが発生しました。";
       msg.className = "text-sm text-red-400";
+      btn.disabled = false;
     }
 
     msg.classList.remove("hidden");
