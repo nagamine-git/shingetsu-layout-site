@@ -58,6 +58,15 @@ const websiteJsonLd = {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={new URL(ogImage, Astro.site)} />
 
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DDY9QM5CXR" is:inline></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-DDY9QM5CXR');
+    </script>
+
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//challenges.cloudflare.com" />
     <link rel="dns-prefetch" href="//static.cloudflareinsights.com" />
