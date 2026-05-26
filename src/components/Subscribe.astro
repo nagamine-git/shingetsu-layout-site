@@ -114,6 +114,9 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
     btn.disabled = true;
     btn.textContent = "送信中…";
 
+    // Retention: 購読フォームの送信（継続接点の獲得トライ）
+    window.track("subscribe_submit", { type: typeEl.value });
+
     try {
       const res = await fetch("/api/subscribe", {
         method: "POST",
@@ -130,6 +133,8 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
         msg.className = "text-sm text-green-400";
         form.reset();
         turnstileToken = "";
+        // Retention: 購読完了（継続接点を獲得）
+        window.track("subscribe_complete", { type: typeEl.value });
       } else {
         const data = (await res.json()) as { error?: string };
         msg.textContent = data.error === "verification_failed"
@@ -137,11 +142,13 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
           : "エラーが発生しました。しばらくしてからお試しください。";
         msg.className = "text-sm text-red-400";
         btn.disabled = false;
+        window.track("subscribe_error", { type: typeEl.value, reason: data.error ?? "unknown" });
       }
     } catch {
       msg.textContent = "通信エラーが発生しました。";
       msg.className = "text-sm text-red-400";
       btn.disabled = false;
+      window.track("subscribe_error", { type: typeEl.value, reason: "network" });
     }
 
     msg.classList.remove("hidden");

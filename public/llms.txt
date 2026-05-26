@@ -11,9 +11,14 @@
 
 ## 主要ページ
 
-- [トップページ](https://shingetsu-layout.com/) — 新月配列の概要、特徴、導入方法
+- [トップページ](https://shingetsu-layout.com/) — 新月配列の概要、特徴、導入方法、よくある質問
 - [ブログ](https://shingetsu-layout.com/blog) — 技術記事・設計解説
 - [お問い合わせ](https://shingetsu-layout.com/contact) — 連絡先フォーム
+
+## ブログ記事
+
+- [新月配列とは — 設計思想と技術的背景](https://shingetsu-layout.com/blog/shingetsu-intro/) — 誕生経緯・設計原則・ローマ字/JIS かなとの違い
+- [ローマ字入力・JIS かな入力と新月配列を比較する](https://shingetsu-layout.com/blog/comparison/) — 打鍵数・指の移動・学習コストの観点で 3 方式を比較
 
 ## 新月配列の特徴
 
@@ -28,3 +33,12 @@
 - Windows / Linux: hazkey
 
 詳細は [GitHub リポジトリ README](https://github.com/nagamine-git/shingetsu-layout) を参照してください。
+
+## よくある質問
+
+- **ローマ字入力との違いは?** ローマ字入力は「か」に k+a の 2 打鍵が必要だが、新月配列は清音はかな 1 文字 = 1 打鍵で入力できる。頻出かなをホームポジション周辺に集約し指の移動量を抑える。
+- **JIS かな入力との違いは?** JIS かな入力は数字行を含む 4 行にかなが分散するが、新月配列は 30 キー（英字 3 行）に集約し Layer 切替でホームポジション周辺だけで入力を完結させる。
+- **対応 OS は?** macOS は Karabiner-Elements、Windows・Linux は hazkey で導入できる。
+- **濁音・半濁音の入力は?** Layer 2 に独立配置され、修飾キーなしの単独打鍵で入力できる。
+- **習得は難しい?** 新しい配列のため学習コストはあるが、「1 文字 1 打鍵」「ホームポジション維持」という一貫した設計で規則を覚えれば直感的。
+- **費用は?** 配列定義・設定ファイルは GitHub で公開され無料で利用できる。

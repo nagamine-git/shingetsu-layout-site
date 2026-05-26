@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from "astro:content";
 import Base from "../../layouts/Base.astro";
+import ShareButtons from "../../components/ShareButtons.astro";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog", ({ data }) => !data.draft);
@@ -120,6 +121,10 @@ const blogPostingJsonLd = {
 
     <div class="prose prose-invert prose-slate max-w-none prose-headings:font-bold prose-a:text-brand-400 prose-code:text-green-300 prose-pre:bg-[var(--color-surface)] prose-pre:border prose-pre:border-white/10 prose-pre:overflow-x-auto [&_pre]:max-w-full">
       <Content />
+    </div>
+
+    <div class="mt-12">
+      <ShareButtons url={postUrl} text={`${post.data.title} | 新月配列`} loc="blog" />
     </div>
 
     <div class="mt-12 pt-8 border-t border-white/10">

@@ -104,10 +104,16 @@ import layoutData from "../data/layout.json";
     });
   }
 
+  let demoTracked = false;
   document.querySelectorAll<HTMLButtonElement>(".layer-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const layerId = parseInt(btn.dataset.layer ?? "0");
       updateDisplay(layerId);
+      // Activation: デモ操作はセッション内で初回のみ計測（イベント膨張を防ぐ）
+      if (!demoTracked) {
+        demoTracked = true;
+        window.track("demo_interact", { component: "layer_demo", layer: layerId });
+      }
     });
   });
 

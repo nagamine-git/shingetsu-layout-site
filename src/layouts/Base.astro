@@ -123,11 +123,31 @@ const websiteJsonLd = {
             target="_blank"
             rel="noopener noreferrer"
             class="underline hover:text-white transition-colors"
+            data-track="github_click"
+            data-track-loc="footer"
           >
             GitHub
           </a>
         </p>
       </div>
     </footer>
+
+    <!-- AARRR 計測: track() ヘルパー + data-track 属性の汎用クリック計測 -->
+    <script>
+      window.track = (name, params = {}) => {
+        // gtag 未ロード（広告ブロック等）でも落ちないように optional chaining
+        window.gtag?.("event", name, params);
+      };
+
+      // data-track="<event>" を持つ要素のクリックを自動計測。
+      // data-track-loc="<location>" があれば location パラメータとして送る。
+      document.addEventListener("click", (e) => {
+        const el = (e.target as HTMLElement).closest<HTMLElement>("[data-track]");
+        if (!el) return;
+        const name = el.dataset.track;
+        if (!name) return;
+        window.track(name, el.dataset.trackLoc ? { location: el.dataset.trackLoc } : {});
+      });
+    </script>
   </body>
 </html>

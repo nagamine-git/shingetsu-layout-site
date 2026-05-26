@@ -1,0 +1,62 @@
+---
+// Referral 導線。シェア／Star をワンクリックで。クリックは data-track 属性で自動計測される。
+interface Props {
+  url?: string;
+  text?: string;
+  /** 計測用のロケーション識別子（例: "home", "blog-intro"） */
+  loc?: string;
+}
+
+const {
+  url = "https://shingetsu-layout.com/",
+  text = "新月配列 — JIS かな 46 文字を 30 キーに収めた、最小かつ最高効率の日本語入力配列",
+  loc = "home",
+} = Astro.props;
+
+const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+const hatenaHref = `https://b.hatena.ne.jp/entry/${url.replace(/^https?:\/\//, "")}`;
+
+const linkClass =
+  "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-white/10 text-slate-300 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all duration-200";
+---
+
+<div class="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-[var(--color-surface-2)] p-6">
+  <p class="text-sm text-slate-400">新月配列を気に入ったら、ぜひ広めてください 🌙</p>
+  <div class="flex flex-wrap items-center justify-center gap-3">
+    <a href={xHref} target="_blank" rel="noopener noreferrer" class={linkClass}
+       data-track="share_click" data-track-loc={`${loc}-x`}>
+      𝕏 でシェア
+    </a>
+    <a href={hatenaHref} target="_blank" rel="noopener noreferrer" class={linkClass}
+       data-track="share_click" data-track-loc={`${loc}-hatena`}>
+      はてブ
+    </a>
+    <button type="button" class={`copy-url-btn ${linkClass}`} data-url={url}
+            data-track="share_click" data-track-loc={`${loc}-copy`}>
+      URL をコピー
+    </button>
+    <a href="https://github.com/nagamine-git/shingetsu-layout" target="_blank" rel="noopener noreferrer"
+       class={`${linkClass} text-brand-300 border-brand-500/30 hover:border-brand-500/50`}
+       data-track="github_click" data-track-loc={`${loc}-star`}>
+      ★ GitHub で Star
+    </a>
+  </div>
+</div>
+
+<script>
+  // クリック計測は Base.astro の data-track delegation が担当。ここはコピー動作のみ。
+  document.querySelectorAll<HTMLButtonElement>(".copy-url-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.url ?? window.location.href);
+        const original = btn.textContent;
+        btn.textContent = "コピーしました";
+        setTimeout(() => {
+          btn.textContent = original;
+        }, 1500);
+      } catch {
+        // クリップボード非対応環境では何もしない
+      }
+    });
+  });
+</script>

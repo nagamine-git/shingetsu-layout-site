@@ -1,0 +1,68 @@
+---
+// よくある質問。回答はサイト既存の説明・layout.json の事実のみに基づく（数値の捏造はしない）。
+const faqs = [
+  {
+    q: "新月配列とは何ですか？",
+    a: "JIS かなの 46 文字を 30 キー（英字 3 行）に収めた、日本語入力用のかな配列です。ホームポジションから指を離さずに高速入力できることを目指して設計されています。",
+  },
+  {
+    q: "ローマ字入力と何が違いますか？",
+    a: "ローマ字入力では「か」を入力するのに k と a の 2 打鍵が必要ですが、新月配列では清音はかな 1 文字 = 1 打鍵で入力できます。頻出かなをホームポジション周辺に集約しているため、指の移動量も抑えられます。",
+  },
+  {
+    q: "対応している OS は？",
+    a: "macOS は Karabiner-Elements、Windows・Linux は hazkey を使って導入できます。設定ファイルは GitHub リポジトリで公開されています。",
+  },
+  {
+    q: "濁音・半濁音はどうやって入力しますか？",
+    a: "濁音・半濁音は Layer 2 に独立して配置されており、修飾キーなしの単独打鍵で入力できます。",
+  },
+  {
+    q: "習得は難しいですか？",
+    a: "新しい配列のため学習コストはあります。ただし「1 文字 1 打鍵」「ホームポジション維持」という 2 つの原則に基づく一貫した設計のため、規則を覚えれば直感的に入力できます。",
+  },
+  {
+    q: "利用に費用はかかりますか？",
+    a: "新月配列の配列定義・設定ファイルは GitHub 上で公開されており、無料で利用できます。",
+  },
+];
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+---
+
+<section id="faq" class="py-24 px-4">
+  <div class="max-w-3xl mx-auto">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">よくある質問</h2>
+      <p class="text-slate-400 max-w-xl mx-auto">
+        新月配列について多く寄せられる質問をまとめました。
+      </p>
+    </div>
+
+    <div class="space-y-3">
+      {faqs.map((f) => (
+        <details class="group rounded-xl border border-white/10 bg-[var(--color-surface-2)] overflow-hidden">
+          <summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden px-5 py-4 flex items-center justify-between gap-4 text-white font-medium hover:bg-white/5 transition-colors">
+            <span>{f.q}</span>
+            <span
+              class="shrink-0 text-xl text-brand-400 transition-transform duration-200 group-open:rotate-45"
+              aria-hidden="true"
+            >＋</span>
+          </summary>
+          <p class="px-5 pb-5 pt-1 text-sm text-slate-400 leading-relaxed">{f.a}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<!-- FAQPage JSON-LD（AI 検索・リッチリザルトに引用されやすくする） -->
+<script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
