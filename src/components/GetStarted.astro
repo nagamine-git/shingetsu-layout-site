@@ -9,15 +9,15 @@ const steps = {
     },
     {
       num: 2,
-      title: "設定ファイルをリポジトリから取得",
+      title: "設定ファイルを取得",
       code: null,
-      note: "GitHub リポジトリの <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>karabiner/</code> ディレクトリにある JSON ファイルを Karabiner-Elements の Complex Modifications フォルダに配置します。詳細は README をご確認ください。",
+      note: "GitHub リポジトリから <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>shingetsu-karabiner-qwerty.json</code> をダウンロードします。",
     },
     {
       num: 3,
-      title: "Karabiner-Elements で有効化",
+      title: "Karabiner-Elements にインポート",
       code: null,
-      note: "Complex Modifications → \"Add predefined rule\" → 新月配列のルールを有効にします。",
+      note: "Karabiner-Elements の Settings → Complex Modifications から <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>shingetsu-karabiner-qwerty.json</code> をインポートし、新月配列のルールを有効にします。",
     },
   ],
   windows: [
@@ -31,7 +31,7 @@ const steps = {
       num: 2,
       title: "新月配列の設定を適用",
       code: null,
-      note: "リポジトリに含まれる設定ファイルを hazkey の所定のディレクトリに配置し、新月配列を選択します。",
+      note: "リポジトリの <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>shingetsu-ansi-qwerty.tsv</code>（Colemak をお使いの場合は <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>shingetsu-ansi-colemak.tsv</code>）を hazkey のローマ字テーブルとしてインポートし、新月配列を有効にします。",
     },
   ],
   linux: [
@@ -45,7 +45,7 @@ const steps = {
       num: 2,
       title: "新月配列の設定を適用",
       code: null,
-      note: "リポジトリに含まれる設定ファイルを所定の場所に配置し、hazkey から新月配列を選択します。",
+      note: "リポジトリの <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>shingetsu-ansi-qwerty.tsv</code>（Colemak をお使いの場合は <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>shingetsu-ansi-colemak.tsv</code>）を hazkey のローマ字テーブルとしてインポートし、新月配列を選択します。",
     },
   ],
 };
