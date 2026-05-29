@@ -1,0 +1,277 @@
+---
+import layoutData from "../data/layout.json";
+
+const phys = layoutData.layers[0].keys;
+const base = layoutData.layers.find((l) => l.id === 1)!.keys;
+const homeRow = layoutData.homeRow;
+const modKeys = new Set(["d", "k", "l"]);
+---
+
+<section id="typing-demo" class="py-24 px-4">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+        打って試す
+      </h2>
+      <p class="text-slate-400 max-w-xl mx-auto">
+        下のキーボードをクリックして、実際にキーを打つと新月配列のかなが表示されます。
+        <span class="text-brand-300">d</span>=★前置シフト、<span class="text-brand-300">k</span>=☆前置シフト、
+        <span class="text-brand-300">l</span>=濁点゛（連打で半濁点゜）。
+        ローマ字入力ではなく、配列そのものの挙動を再現しています。
+      </p>
+    </div>
+
+    <!-- Output -->
+    <div
+      id="td-stage"
+      tabindex="0"
+      role="textbox"
+      aria-label="新月配列タイピング体験。フォーカスしてキーを打つとかなが表示されます。"
+      class="outline-none mx-auto max-w-2xl"
+    >
+      <div
+        class="min-h-[4.5rem] rounded-xl border border-white/10 bg-[var(--color-surface-2)] px-5 py-4 flex items-center flex-wrap gap-x-0.5 text-2xl sm:text-3xl text-white transition-colors"
+        id="td-output-box"
+      >
+        <span id="td-committed" class="whitespace-pre-wrap break-all"></span
+        ><span id="td-preedit"></span><span
+          id="td-caret"
+          class="inline-block w-px h-7 bg-brand-400 animate-pulse ml-0.5"
+        ></span>
+        <span
+          id="td-placeholder"
+          class="text-slate-500 text-base sm:text-lg select-none"
+          >ここをクリックして q や d→f などを打ってみてください</span
+        >
+      </div>
+      <div class="flex items-center justify-between mt-2 px-1 text-xs text-slate-500">
+        <span id="td-state" aria-live="polite"></span>
+        <span class="hidden sm:inline">Space=確定 / Backspace=削除 / Esc=クリア</span>
+      </div>
+
+      <!-- Keyboard -->
+      <div class="mt-6 space-y-1.5 select-none">
+        {phys.map((row, rowIndex) => (
+          <div
+            class="flex justify-center gap-1 sm:gap-1.5"
+            style={rowIndex === 1 ? "padding-left: 1.25rem;" : rowIndex === 2 ? "padding-left: 2.5rem;" : ""}
+          >
+            {row.map((key, colIndex) => {
+              const label = base[rowIndex][colIndex];
+              const isHome = rowIndex === 1 && homeRow.includes(colIndex);
+              const isMod = modKeys.has(key);
+              return (
+                <button
+                  type="button"
+                  class:list={[
+                    "td-key relative w-[2.1rem] h-[2.6rem] sm:w-12 sm:h-14 rounded-lg flex flex-col items-center justify-center border transition-all duration-100",
+                    isMod
+                      ? "border-brand-500/50 bg-brand-900/40 text-brand-200"
+                      : isHome
+                        ? "border-brand-500/40 bg-brand-900/25 text-brand-100"
+                        : "border-white/10 bg-[var(--color-surface-2)] text-slate-200",
+                  ]}
+                  data-key={key}
+                  aria-label={`キー ${key}: ${label}`}
+                >
+                  <span class="text-[0.55rem] leading-none text-slate-500 absolute top-1 left-1.5">{key}</span>
+                  <span class="text-base sm:text-xl font-medium leading-none mt-1">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      <!-- Touch controls -->
+      <div class="flex justify-center gap-2 mt-4">
+        <button type="button" id="td-space" class="px-4 py-2 rounded-lg text-sm border border-white/10 text-slate-300 hover:border-white/30 transition-colors">確定</button>
+        <button type="button" id="td-back" class="px-4 py-2 rounded-lg text-sm border border-white/10 text-slate-300 hover:border-white/30 transition-colors">⌫ 削除</button>
+        <button type="button" id="td-clear" class="px-4 py-2 rounded-lg text-sm border border-white/10 text-slate-300 hover:border-white/30 transition-colors">クリア</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import romantableData from "../data/romantable.json";
+
+  const table = romantableData.table as Record<string, string>;
+  const seqs = Object.keys(table);
+  const validKeys = new Set<string>();
+  for (const s of seqs) for (const ch of s) validKeys.add(ch);
+
+  const committedEl = document.getElementById("td-committed")!;
+  const preeditEl = document.getElementById("td-preedit")!;
+  const placeholderEl = document.getElementById("td-placeholder")!;
+  const stateEl = document.getElementById("td-state")!;
+  const stage = document.getElementById("td-stage")!;
+  const outputBox = document.getElementById("td-output-box")!;
+  const keyEls = Array.from(document.querySelectorAll<HTMLElement>(".td-key"));
+  const keyMap = new Map<string, HTMLElement>();
+  for (const el of keyEls) keyMap.set(el.dataset.key ?? "", el);
+
+  const out: string[] = []; // committed kana units
+  let buf = ""; // pending physical keys
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  let tracked = false;
+
+  function canExtend(b: string): boolean {
+    for (const k of seqs) if (k.length > b.length && k.startsWith(b)) return true;
+    return false;
+  }
+  function longestTerminalPrefix(b: string): number {
+    for (let L = b.length; L >= 1; L--) if (table[b.slice(0, L)] !== undefined) return L;
+    return 0;
+  }
+  function tentative(b: string): string {
+    const L = longestTerminalPrefix(b);
+    return L > 0 ? table[b.slice(0, L)] : "";
+  }
+
+  function process(force: boolean): void {
+    let f = force;
+    while (buf.length) {
+      if (!f && canExtend(buf)) break;
+      const L = longestTerminalPrefix(buf);
+      if (L === 0) {
+        buf = buf.slice(1); // unresolvable lead key, drop
+        continue;
+      }
+      out.push(table[buf.slice(0, L)]);
+      buf = buf.slice(L);
+      f = false; // remainder resolves normally
+    }
+  }
+
+  function describeState(): string {
+    if (!buf) return "";
+    const parts: string[] = [];
+    const prefixed = buf.startsWith("d") || buf.startsWith("k");
+    if (buf.startsWith("d")) parts.push("★前置シフト");
+    else if (buf.startsWith("k")) parts.push("☆前置シフト");
+    // 濁点/半濁点は前置シフトを伴わない素のかなへの後置修飾のときだけ表示する
+    if (!prefixed) {
+      if (buf.endsWith("ll")) parts.push("半濁点゜");
+      else if (buf.endsWith("l")) parts.push("濁点゛");
+    }
+    const t = tentative(buf);
+    if (t) parts.push(`→ ${t}（確定待ち）`);
+    return parts.length ? `${buf} : ${parts.join(" ")}` : `${buf} : 入力中`;
+  }
+
+  function render(): void {
+    committedEl.textContent = out.join("");
+    preeditEl.textContent = buf;
+    preeditEl.className = buf
+      ? "rounded bg-brand-600/30 text-brand-200 border-b-2 border-brand-400 px-1"
+      : "";
+    stateEl.textContent = describeState();
+    placeholderEl.style.display = out.length || buf ? "none" : "";
+    for (const el of keyEls) el.classList.remove("ring-2", "ring-brand-400", "scale-95");
+    for (const ch of buf) keyMap.get(ch)?.classList.add("ring-2", "ring-brand-400");
+  }
+
+  function flash(key: string): void {
+    const el = keyMap.get(key);
+    if (!el) return;
+    el.classList.add("scale-95");
+    setTimeout(() => el.classList.remove("scale-95"), 100);
+  }
+
+  function resetIdle(): void {
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      process(true);
+      render();
+    }, 700);
+  }
+
+  function feed(key: string): void {
+    if (!validKeys.has(key)) return;
+    buf += key;
+    process(false);
+    render();
+    flash(key);
+    resetIdle();
+    if (!tracked) {
+      tracked = true;
+      window.track("demo_interact", { component: "typing_demo" });
+    }
+  }
+
+  function commit(): void {
+    if (idleTimer) clearTimeout(idleTimer);
+    process(true);
+    render();
+  }
+  function backspace(): void {
+    if (buf) buf = buf.slice(0, -1);
+    else out.pop();
+    render();
+  }
+  function clearAll(): void {
+    if (idleTimer) clearTimeout(idleTimer);
+    out.length = 0;
+    buf = "";
+    render();
+  }
+
+  stage.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      backspace();
+      return;
+    }
+    if (e.key === " ") {
+      e.preventDefault();
+      commit();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      clearAll();
+      return;
+    }
+    const k = e.key.length === 1 ? e.key.toLowerCase() : "";
+    if (k && validKeys.has(k)) {
+      e.preventDefault();
+      feed(k);
+    }
+  });
+
+  stage.addEventListener("focus", () => {
+    outputBox.classList.add("border-brand-500/60");
+  });
+  stage.addEventListener("blur", () => {
+    outputBox.classList.remove("border-brand-500/60");
+    commit();
+  });
+
+  for (const el of keyEls) {
+    el.addEventListener("click", () => {
+      stage.focus();
+      feed(el.dataset.key ?? "");
+    });
+  }
+  document.getElementById("td-space")!.addEventListener("click", () => {
+    stage.focus();
+    commit();
+  });
+  document.getElementById("td-back")!.addEventListener("click", () => {
+    stage.focus();
+    backspace();
+  });
+  document.getElementById("td-clear")!.addEventListener("click", () => {
+    stage.focus();
+    clearAll();
+  });
+
+  render();
+</script>
