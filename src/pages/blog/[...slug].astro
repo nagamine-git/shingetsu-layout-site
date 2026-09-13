@@ -76,6 +76,16 @@ const blogPostingJsonLd = {
   .prose p { letter-spacing: 0.01em; }
   .prose table { font-size: 0.9em; }
   .prose th { background-color: #1e293b; }
+  /* データ表が広いので、はみ出す場合は表単位で横スクロールさせる（body は overflow-x: hidden） */
+  .prose table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .prose img {
+    border-radius: 0.5rem;
+    background-color: #fff;
+  }
 </style>
 
 <Base title={`${post.data.title} — 新月配列`} description={post.data.description}>
