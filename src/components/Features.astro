@@ -30,9 +30,10 @@ const features = [
 ];
 ---
 
-<section id="features" class="py-24 px-4">
-  <div class="max-w-5xl mx-auto">
-    <div class="text-center mb-16">
+<section id="features" class="content-section feature-section">
+  <div class="page-width">
+    <div class="section-heading" data-reveal>
+      <p class="section-index" aria-hidden="true">01 / PHILOSOPHY</p>
       <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
         なぜ新月配列なのか
       </h2>
@@ -42,11 +43,10 @@ const features = [
       </p>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-6">
+    <div class="feature-grid">
       {features.map((f) => (
-        <div class="group relative rounded-2xl border border-white/10 bg-[var(--color-surface-2)] p-6 hover:border-brand-500/40 transition-all duration-300 hover:-translate-y-1">
+        <div class="feature-card" data-reveal>
           <div class="flex items-start justify-between mb-4">
-            <span class="text-3xl" aria-hidden="true">{f.icon}</span>
             <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/20">
               {f.badge}
             </span>

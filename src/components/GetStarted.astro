@@ -57,9 +57,10 @@ const steps = {
 };
 ---
 
-<section id="get-started" class="py-24 px-4 bg-[var(--color-surface-2)]/40">
-  <div class="max-w-4xl mx-auto">
-    <div class="text-center mb-12">
+<section id="get-started" class="content-section install-section">
+  <div class="page-width">
+    <div class="section-heading" data-reveal>
+      <p class="section-index" aria-hidden="true">04 / GET STARTED</p>
       <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">導入方法</h2>
       <p class="text-slate-400 max-w-xl mx-auto">
         macOS・Windows・Linux に対応。詳細な手順は
@@ -75,21 +76,22 @@ const steps = {
     </div>
 
     <!-- OS tabs -->
-    <div class="flex justify-center gap-2 mb-8" id="os-tabs" role="tablist">
-      <button class="os-tab-btn px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-brand-600 text-white border border-brand-500" data-os="macos" role="tab" aria-selected="true">
+    <div class="instrument-tabs" id="os-tabs" role="tablist" aria-label="OS を選択">
+      <button id="os-tab-macos" aria-controls="os-panel-macos" class="os-tab-btn px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-brand-600 text-white border border-brand-500" data-os="macos" role="tab" aria-selected="true">
         macOS
       </button>
-      <button class="os-tab-btn px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-white/10 text-slate-400 hover:text-white" data-os="windows" role="tab" aria-selected="false">
+      <button id="os-tab-windows" aria-controls="os-panel-windows" tabindex="-1" class="os-tab-btn px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-white/10 text-slate-400 hover:text-white" data-os="windows" role="tab" aria-selected="false">
         Windows
       </button>
-      <button class="os-tab-btn px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-white/10 text-slate-400 hover:text-white" data-os="linux" role="tab" aria-selected="false">
+      <button id="os-tab-linux" aria-controls="os-panel-linux" tabindex="-1" class="os-tab-btn px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-white/10 text-slate-400 hover:text-white" data-os="linux" role="tab" aria-selected="false">
         Linux
       </button>
     </div>
 
     <!-- Steps panels -->
     {Object.entries(steps).map(([os, stepsArr]) => (
-      <div class="os-panel space-y-4" data-os={os} style={os !== "macos" ? "display:none" : ""}>
+      <div class="os-panel space-y-4" id={`os-panel-${os}`} aria-labelledby={`os-tab-${os}`} role="tabpanel" tabindex="0" data-os={os}>
+        <noscript><h3>{os === "macos" ? "macOS" : os === "windows" ? "Windows" : "Linux"}</h3></noscript>
         {stepsArr.map((step) => (
           <div class="rounded-xl border border-white/10 bg-[var(--color-surface-2)] p-5">
             <div class="flex items-start gap-4">
@@ -141,28 +143,35 @@ const steps = {
 </section>
 
 <script>
-  document.querySelectorAll<HTMLButtonElement>(".os-tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const os = btn.dataset.os;
-
-      document.querySelectorAll<HTMLButtonElement>(".os-tab-btn").forEach((b) => {
-        const isActive = b.dataset.os === os;
-        b.setAttribute("aria-selected", String(isActive));
-        if (isActive) {
-          b.classList.add("bg-brand-600", "text-white", "border-brand-500");
-          b.classList.remove("text-slate-400", "border-white/10");
-        } else {
-          b.classList.remove("bg-brand-600", "text-white", "border-brand-500");
-          b.classList.add("text-slate-400", "border-white/10");
-        }
-      });
-
-      document.querySelectorAll<HTMLElement>(".os-panel").forEach((panel) => {
-        panel.style.display = panel.dataset.os === os ? "" : "none";
-      });
-
-      // Activation: OS タブの選択を計測（複数 OS を見る行動も把握できる）
+  const osTabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".os-tab-btn"));
+  function selectOS(os: string): void {
+    for (const tab of osTabs) {
+      const isActive = tab.dataset.os === os;
+      tab.setAttribute("aria-selected", String(isActive));
+      tab.tabIndex = isActive ? 0 : -1;
+    }
+    document.querySelectorAll<HTMLElement>(".os-panel").forEach((panel): void => {
+      panel.hidden = panel.dataset.os !== os;
+    });
+  }
+  selectOS("macos");
+  osTabs.forEach((tab): void => {
+    tab.addEventListener("click", (): void => {
+      const os = tab.dataset.os ?? "macos";
+      selectOS(os);
       window.track("os_tab_select", { os });
+    });
+    tab.addEventListener("keydown", (event): void => {
+      const currentIndex = osTabs.indexOf(tab);
+      let nextIndex: number;
+      if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % osTabs.length;
+      else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + osTabs.length) % osTabs.length;
+      else if (event.key === "Home") nextIndex = 0;
+      else if (event.key === "End") nextIndex = osTabs.length - 1;
+      else return;
+      event.preventDefault();
+      osTabs[nextIndex].focus();
+      osTabs[nextIndex].click();
     });
   });
 

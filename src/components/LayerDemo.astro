@@ -2,9 +2,10 @@
 import layoutData from "../data/layout.json";
 ---
 
-<section id="layer-demo" class="py-24 px-4 bg-[var(--color-surface-2)]/40">
-  <div class="max-w-4xl mx-auto">
-    <div class="text-center mb-12">
+<section id="layer-demo" class="content-section layer-section">
+  <div class="page-width">
+    <div class="section-heading" data-reveal>
+      <p class="section-index" aria-hidden="true">02 / STRUCTURE</p>
       <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
         3層構造でかなを完全収録
       </h2>
@@ -15,12 +16,16 @@ import layoutData from "../data/layout.json";
     </div>
 
     <!-- Layer tabs -->
-    <div class="flex justify-center gap-2 mb-8" role="tablist" aria-label="レイヤー切替">
+    <div class="instrument-panel" data-reveal>
+    <div class="instrument-tabs" role="tablist" aria-label="レイヤー切替">
       {layoutData.layers.filter((layer) => layer.id !== 0).map((layer) => (
         <button
           class="layer-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-white/10 text-slate-400 hover:text-white hover:border-white/30"
           data-layer={layer.id}
           role="tab"
+          id={`layer-tab-${layer.id}`}
+          aria-controls="keyboard-display"
+          tabindex={layer.id === 1 ? 0 : -1}
           aria-selected={layer.id === 1 ? "true" : "false"}
         >
           {layer.label}
@@ -29,11 +34,10 @@ import layoutData from "../data/layout.json";
     </div>
 
     <!-- Keyboard grid -->
-    <div class="space-y-2" id="keyboard-display">
-      {layoutData.layers[0].keys.map((row, rowIndex) => (
+    <div class="space-y-2" id="keyboard-display" role="tabpanel" aria-labelledby="layer-tab-1" tabindex="0">
+      {layoutData.layers[1].keys.map((row, rowIndex) => (
         <div
           class="flex justify-center gap-1.5 layer-row"
-          style={rowIndex === 1 ? "padding-left: 1.5rem;" : rowIndex === 2 ? "padding-left: 3rem;" : ""}
           data-row={rowIndex}
         >
           {row.map((char, colIndex) => {
@@ -43,6 +47,7 @@ import layoutData from "../data/layout.json";
                 class={`key-cell w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center text-lg font-medium transition-all duration-200 border border-white/10 bg-[var(--color-surface-2)] text-slate-300`}
                 data-col={colIndex}
                 data-row={rowIndex}
+                data-home={isHome ? "true" : undefined}
               >
                 {char}
               </div>
@@ -55,6 +60,7 @@ import layoutData from "../data/layout.json";
     <p class="text-center text-xs text-slate-500 mt-4">
       青色はホームポジション（人差し指〜小指）を基点とするキー
     </p>
+    </div>
   </div>
 </section>
 
@@ -71,6 +77,7 @@ import layoutData from "../data/layout.json";
   function updateDisplay(layerId: number): void {
     const layer = layers.find((l) => l.id === layerId);
     if (!layer) return;
+    document.getElementById("keyboard-display")?.setAttribute("aria-labelledby", `layer-tab-${layerId}`);
 
     const showHome = layerId !== 0;
 
@@ -94,6 +101,7 @@ import layoutData from "../data/layout.json";
     document.querySelectorAll<HTMLButtonElement>(".layer-btn").forEach((btn) => {
       const isActive = parseInt(btn.dataset.layer ?? "0") === layerId;
       btn.setAttribute("aria-selected", String(isActive));
+      btn.tabIndex = isActive ? 0 : -1;
       if (isActive) {
         btn.classList.add("bg-brand-600", "text-white", "border-brand-500");
         btn.classList.remove("text-slate-400", "border-white/10");
@@ -106,6 +114,19 @@ import layoutData from "../data/layout.json";
 
   let demoTracked = false;
   document.querySelectorAll<HTMLButtonElement>(".layer-btn").forEach((btn) => {
+    btn.addEventListener("keydown", (event): void => {
+      const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".layer-btn"));
+      const currentIndex = tabs.indexOf(btn);
+      let nextIndex: number;
+      if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+      else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      else if (event.key === "Home") nextIndex = 0;
+      else if (event.key === "End") nextIndex = tabs.length - 1;
+      else return;
+      event.preventDefault();
+      tabs[nextIndex].focus();
+      tabs[nextIndex].click();
+    });
     btn.addEventListener("click", () => {
       const layerId = parseInt(btn.dataset.layer ?? "0");
       updateDisplay(layerId);
