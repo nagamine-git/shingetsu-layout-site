@@ -168,7 +168,10 @@ const websiteJsonLd = {
         }, { threshold: 0.12 });
         document.querySelectorAll("[data-reveal]").forEach((element): void => observer.observe(element));
         motionPreference.addEventListener("change", (): void => {
-          if (motionPreference.matches) document.getAnimations?.().forEach((animation): void => animation.cancel());
+          if (motionPreference.matches) document.getAnimations?.().forEach((animation): void => {
+            const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null;
+            if (target instanceof HTMLElement && target.hasAttribute("data-reveal")) animation.cancel();
+          });
         });
       }
     </script>
