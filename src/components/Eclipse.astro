@@ -26,18 +26,18 @@
   <svg class="eclipse-phase" viewBox="0 0 600 600" focusable="false">
     <defs>
       <linearGradient id="lunar-phase-light" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#202328" />
-        <stop offset=".65" stop-color="#34383e" />
-        <stop offset="1" stop-color="#24272c" />
+        <stop offset="0" stop-color="#aeb5bf" />
+        <stop offset=".65" stop-color="#e0e4eb" />
+        <stop offset="1" stop-color="#f1ede5" />
       </linearGradient>
       <mask id="lunar-phase-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600">
-        <circle cx="300" cy="300" r="300" fill="black" />
-        <circle class="eclipse-phase-shadow" cx="300" cy="300" r="300" fill="white" />
+        <circle cx="300" cy="300" r="300" fill="white" />
+        <circle class="eclipse-phase-shadow" cx="300" cy="300" r="300" fill="black" />
       </mask>
     </defs>
     <g mask="url(#lunar-phase-mask)">
       <circle cx="300" cy="300" r="300" fill="url(#lunar-phase-light)" />
-      <circle cx="300" cy="300" r="300" filter="url(#lunar-clouds)" opacity=".38" />
+      <circle cx="300" cy="300" r="300" filter="url(#lunar-clouds)" opacity=".16" />
     </g>
   </svg>
   <svg class="eclipse-film" viewBox="0 0 600 600" focusable="false">
