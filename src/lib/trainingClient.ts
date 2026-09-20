@@ -616,7 +616,20 @@ element("lab-target-review").addEventListener("click", (): void => {
   startButton.scrollIntoView({ block: "nearest" });
 });
 
+element("lab-prompt").addEventListener("keydown", (event): void => {
+  if (material() !== "paragraph" || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || !["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End"].includes(event.key)) return;
+  const prompt = element("lab-prompt");
+  const line = Number.parseFloat(getComputedStyle(prompt).lineHeight);
+  const offsets: Record<string, number> = { ArrowDown: line, ArrowUp: -line, PageDown: prompt.clientHeight, PageUp: -prompt.clientHeight };
+  const offset = offsets[event.key];
+  const top = event.key === "Home" ? 0 : event.key === "End" ? prompt.scrollHeight : offset === undefined ? undefined : prompt.scrollTop + offset;
+  if (top === undefined) return;
+  event.preventDefault();
+  prompt.scrollTo({ top, behavior: "instant" });
+});
+
 stage.addEventListener("keydown", (event): void => {
+  if (event.defaultPrevented) return;
   if ((event.target !== stage && !(material() === "paragraph" && event.target === element("lab-prompt"))) || state !== "running" || mode === "ime" || method() !== "keyboard" || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
   if (event.key === "Escape") {
     if (mode !== "focus") { event.preventDefault(); pause(); }
