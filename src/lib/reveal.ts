@@ -13,23 +13,30 @@ if ("IntersectionObserver" in window && "animate" in Element.prototype) {
     ".post-card", ".prose > h2", ".prose > h3",
   ];
   const observer = new IntersectionObserver((entries): void => {
-    let sequence = 0;
+    const sequences = new Map<Element | null, number>();
     for (const entry of entries) {
       if (!entry.isIntersecting || !(entry.target instanceof HTMLElement)) continue;
       const element = entry.target;
       observer.unobserve(element);
       if (motionPreference.matches || element.contains(document.activeElement)) continue;
+      const sequence = sequences.get(element.parentElement) ?? 0;
+      sequences.set(element.parentElement, sequence + 1);
       const animation = element.animate(
-        [{ opacity: 0.35, transform: "translateY(18px)" }, { opacity: 1, transform: "translateY(0)" }],
-        { duration: 720, delay: Math.min(sequence++ * 85, 255), easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" },
+        [{ opacity: 0.08, transform: "translateY(22px)" }, { opacity: 1, transform: "translateY(0)" }],
+        { duration: 1000, delay: Math.min(sequence * 100, 300), easing: "cubic-bezier(.25,.1,.25,1)", fill: "backwards" },
       );
       activeReveals.set(element, animation);
       animation.onfinish = (): void => { activeReveals.delete(element); };
     }
-  }, { threshold: 0, rootMargin: "0px 0px -24px 0px" });
+  }, { threshold: 0, rootMargin: "0px 0px -48px 0px" });
 
   document.querySelectorAll<HTMLElement>(selectors.join(",")).forEach((element): void => {
-    if (!element.parentElement?.closest(selectors.join(","))) observer.observe(element);
+    if (element.parentElement?.closest(selectors.join(","))) return;
+    if (element.matches(".section-heading")) {
+      Array.from(element.children).forEach((child): void => {
+        if (child instanceof HTMLElement) observer.observe(child);
+      });
+    } else observer.observe(element);
   });
 
   document.addEventListener("focusin", (event): void => {
