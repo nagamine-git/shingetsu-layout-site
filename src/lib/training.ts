@@ -1,7 +1,7 @@
 import romanData from "../data/romantable.json";
 import { benchmarkCorpus, curriculum, trainingCorpus, type Passage } from "../data/trainingCorpus";
 
-export type TrainingMode = "learn" | "review" | "speed" | "benchmark" | "ime";
+export type TrainingMode = "learn" | "review" | "speed" | "benchmark" | "ime" | "focus";
 export type TrainingMethod = "keyboard" | "touch" | "ime";
 export interface TrainingToken { text: string; paths: string[]; }
 export interface Skill {
@@ -126,7 +126,7 @@ export function readProfile(raw: string | null): TrainingProfile {
     if (Array.isArray(parsed.results)) {
       for (const entry of parsed.results.slice(-180)) {
         if (!record(entry) || typeof entry.date !== "string" || entry.date.length > 40 || !Number.isFinite(Date.parse(entry.date))) continue;
-        if (!["learn", "review", "speed", "benchmark", "ime"].includes(String(entry.mode)) || !["keyboard", "touch", "ime"].includes(String(entry.method))) continue;
+        if (!["learn", "review", "speed", "benchmark", "ime", "focus"].includes(String(entry.mode)) || !["keyboard", "touch", "ime"].includes(String(entry.method))) continue;
         if (!number(entry.cpm, 100_000) || !number(entry.accuracy, 100) || !number(entry.duration, 7200) || !number(entry.stage, 5)) continue;
         if (!number(entry.kana, 100_000) || !number(entry.attempts, 1e7) || !number(entry.errors, entry.attempts)) continue;
         if (typeof entry.interrupted !== "boolean" || typeof entry.assisted !== "boolean" || typeof entry.signature !== "string" || entry.signature.length > 100) continue;
@@ -167,11 +167,12 @@ export function priority(skill: Skill | undefined, now: number): number {
 export function selectPassages(profile: TrainingProfile, method: "keyboard" | "touch", mode: TrainingMode, stage: number, now: number, random: () => number = Math.random, focus = ""): Passage[] {
   if (mode === "benchmark" || mode === "ime") return [...benchmarkCorpus];
   const stats = profile[method];
-  const pool = trainingCorpus.filter((passage): boolean => (mode === "speed" ? passage.stage >= 2 : passage.stage <= stage));
+  const continuous = mode === "speed" || mode === "focus";
+  const pool = trainingCorpus.filter((passage): boolean => (continuous ? passage.stage >= 2 : passage.stage <= stage));
   const selected: Passage[] = [];
   let size = 0;
-  const maxChars = mode === "speed" ? 500 : stage < 2 ? 36 : 75;
-  while (size < maxChars && selected.length < (mode === "speed" ? 30 : 14)) {
+  const maxChars = continuous ? 500 : stage < 2 ? 36 : 75;
+  while (size < maxChars && selected.length < (continuous ? 30 : 14)) {
     const choices = pool.filter((passage): boolean => !selected.some((item): boolean => item.id === passage.id));
     if (!choices.length) break;
     const weighted = choices.map((passage): { passage: Passage; weight: number } => {
@@ -179,7 +180,7 @@ export function selectPassages(profile: TrainingProfile, method: "keyboard" | "t
       const weakness = characters.reduce((total, kana): number => total + priority(stats[kana], now), 0) / characters.length;
       const hasNew = characters.some((kana): boolean => curriculum[stage].kana.includes(kana));
       const focusMatch = focus && (passage.reading.includes(focus) || tokenize(passage.reading).map((token): string => token.paths[0]).join("").includes(focus));
-      return { passage, weight: (mode === "speed" ? 1 : weakness) * (hasNew ? 2 : 1) * (profile.recent.includes(passage.id) ? .18 : 1) * (focusMatch ? 12 : 1) };
+      return { passage, weight: (continuous ? 1 : weakness) * (hasNew ? 2 : 1) * (profile.recent.includes(passage.id) ? .18 : 1) * (focusMatch ? 12 : 1) };
     });
     let needle = Math.max(0, Math.min(.999999, random())) * weighted.reduce((total, item): number => total + item.weight, 0);
     const next = weighted.find((item): boolean => (needle -= item.weight) < 0)?.passage ?? weighted[0].passage;

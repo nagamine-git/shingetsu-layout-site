@@ -7,10 +7,16 @@ const modes = [
   { id: "speed", number: "03", title: "高速化", sub: "正確さの、その先" },
   { id: "benchmark", number: "04", title: "定点測定", sub: "同じ条件で比べる" },
   { id: "ime", number: "05", title: "IME実践", sub: "変換まで、実際に" },
+  { id: "focus", number: "06", title: "集中", sub: "短く打って、振り返る" },
 ];
 ---
 
 <div id="training-lab" class="training-lab" hidden>
+  <header id="lab-focus-toolbar" class="lab-focus-toolbar" hidden>
+    <button id="lab-focus-exit" type="button" class="lab-secondary">← モード選択</button>
+    <h1>新月タイピング <span>集中</span></h1>
+    <button id="lab-focus-settings" type="button" class="lab-secondary" aria-expanded="false" aria-controls="lab-settings">設定</button>
+  </header>
   <nav class="lab-modes" aria-label="トレーニングの種類">
     {modes.map((mode) => <button type="button" data-mode={mode.id} aria-pressed={mode.id === "learn"}>
       <span class="lab-mode-number">{mode.number}</span><span><strong>{mode.title}</strong><small>{mode.sub}</small></span>
@@ -77,7 +83,7 @@ const modes = [
       <div id="lab-rest" class="lab-rest" hidden><strong>手を離して、一息。</strong><p id="lab-rest-text">20秒を目安に、遠くを見たり、肩の力を抜いたり。</p><button id="lab-rest-skip" type="button" class="lab-secondary">休憩を終える</button></div>
     </section>
   </div>
-  <section id="lab-result" class="lab-result" aria-labelledby="lab-result-title" tabindex="-1" hidden>
+  <section id="lab-result" class="lab-result" aria-labelledby="lab-result-title" aria-describedby="lab-result-summary" tabindex="-1" hidden>
     <div class="lab-result-heading"><div><p class="lab-eyebrow">SESSION COMPLETE</p><h2 id="lab-result-title">一歩、指に馴染んだ。</h2></div><p id="lab-result-tag"></p></div>
     <p id="lab-result-summary"></p>
     <div class="lab-result-grid">
@@ -85,6 +91,14 @@ const modes = [
       <div class="lab-next-step"><span class="lab-eyebrow">NEXT / 次の一手</span><h3 id="lab-advice-title"></h3><p id="lab-advice"></p><button id="lab-target-review" type="button" class="lab-secondary">この弱点を文で復習 →</button></div>
     </div>
     <div class="lab-analysis-grid"><div><h3>迷いやすい文字</h3><ul id="lab-weak-list"></ul></div><div><h3>遅い2打鍵 · この入力方法の累積</h3><ul id="lab-pair-list"></ul></div></div>
+    <div id="lab-focus-result" class="lab-focus-result" hidden>
+      <div class="lab-focus-metrics"><div><strong id="lab-focus-cpm"></strong><span>かな / 分</span></div><div><strong id="lab-focus-accuracy"></strong><span>打鍵正確率</span></div></div>
+      <p id="lab-focus-summary" class="lab-muted"></p>
+      <p id="lab-focus-tip"></p>
+      <button id="lab-retry" type="button" class="button-primary" aria-keyshortcuts="Enter">もう一度 <kbd>Enter ↵</kbd></button>
+      <p class="lab-muted">急がず振り返ってから、次の一本へ。自動では再開しません。休憩はいつでも。</p>
+      <p id="lab-focus-storage" class="lab-muted"></p>
+    </div>
   </section>
   <section class="lab-records" aria-labelledby="lab-records-title">
     <div class="lab-records-heading"><div><p class="lab-eyebrow">YOUR PROGRESS</p><h2 id="lab-records-title">昨日より、自然に。</h2></div><p id="lab-history-summary">記録はこの端末だけに。</p></div>
@@ -104,7 +118,8 @@ const modes = [
     <article><span>03 / ACCELERATE</span><h3>速さを、分解する。</h3><p>30・60・120秒で自然な文を連続入力。ミスした文字と遅い2打鍵を分析し、その組み合わせを含む別の文章へ戻ります。定点測定は学習用とは別の固定文・60秒・ヒントなしです。</p></article>
   </div>
   <details open><summary>最初に：PC・スマートフォン・導入済みIMEの使い分け</summary><div>
-    <p><strong>習得・復習・高速化・定点測定：</strong>配列のインストール不要。PCはIMEをオフ、OSのキー変換もオフの英数QWERTY状態にしてください。物理キーの位置を採点します。D/Kは前置シフトなので、同時押しではなく順に押します。濁点はL、半濁点はLを2回。正しい別打鍵経路も受け付けます。誤打では進まないため、Backspaceでの修正は不要です。</p>
+    <p><strong>習得・復習・高速化・定点測定・集中：</strong>配列のインストール不要。PCはIMEをオフ、OSのキー変換もオフの英数QWERTY状態にしてください。物理キーの位置を採点します。D/Kは前置シフトなので、同時押しではなく順に押します。濁点はL、半濁点はLを2回。正しい別打鍵経路も受け付けます。誤打では進まないため、Backspaceでの修正は不要です。</p>
+    <p><strong>集中：</strong>課題文と小さな残り時間を中心にしたシンプルな画面。初期設定は60秒、設定から30・60・120秒を選べます。最初の打鍵で計測が始まり、時間になると速度・正確率・次の改善点を表示して保存。結果画面でEnter、または「もう一度」のタップで同じ条件の新しい課題へ進みます。自動再開や休憩の強制はしません。Esc・画面の切り替え・モード選択は中断記録になります。ガイドは初期状態で非表示、必要ならヒントを使えます。「モード選択」で履歴や詳しい使い方に戻れます。</p>
     <p><strong>IME実践：</strong><a href="/#get-started">新月配列を導入</a>した環境で日本語IMEをオンにし、表示の漢字・句読点まで入力します。他の配列でも動くため、配列の自動判定や本人確認はしていません。変換後の文字/分で測り、かな/分とは比較しません。</p>
     <p><strong>スマートフォン：</strong>画面タップで配置を学習できます。外付けキーボードも選べます。タップの記録はPCと独立し、PCの運動技能を同等に鍛えるものではありません。IME実践は端末の日本語キーボードを使います。</p>
     <p><strong>操作：</strong>開始後は最初の入力から計測。Escで一時停止／時間制テストは終了。Tabは通常のフォーカス移動に使えます。タイピング中に別の画面へ移動すると学習は停止、時間制テストは中断記録になり自己ベストから除外します。</p>

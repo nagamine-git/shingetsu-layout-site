@@ -18,12 +18,13 @@ const hintsSelect = element<HTMLSelectElement>("lab-hints");
 const imeInput = element<HTMLTextAreaElement>("lab-ime-input");
 const keys = [...app.querySelectorAll<HTMLButtonElement>(".lab-key")];
 const modeButtons = [...app.querySelectorAll<HTMLButtonElement>("[data-mode]")];
-const names: Record<TrainingMode, string> = { learn: "習得", review: "復習", speed: "高速化", benchmark: "定点測定", ime: "IME実践" };
+const names: Record<TrainingMode, string> = { learn: "習得", review: "復習", speed: "高速化", benchmark: "定点測定", ime: "IME実践", focus: "集中" };
 const methodNames: Record<TrainingMethod, string> = { keyboard: "PC", touch: "タップ", ime: "IME" };
 let profile: TrainingProfile = freshProfile();
 let storageAvailable = true;
 try { profile = readProfile(localStorage.getItem(trainingStorageKey)); } catch { storageAvailable = false; }
-let mode: TrainingMode = "learn";
+let mode: TrainingMode = new URLSearchParams(location.search).get("mode") === "focus" ? "focus" : "learn";
+let returnMode: TrainingMode = "learn";
 let state: "ready" | "running" | "paused" | "done" | "rest" = "ready";
 let run: TrainingRun;
 let timer: ReturnType<typeof setInterval> | undefined;
@@ -42,14 +43,23 @@ let restUntil = 0;
 let lastHintRender = "";
 
 methodSelect.value = matchMedia("(pointer: coarse)").matches ? "touch" : "keyboard";
+if (mode === "focus") hintsSelect.value = "off";
 
 function method(): "keyboard" | "touch" { return methodSelect.value === "touch" ? "touch" : "keyboard"; }
 function effectiveMethod(): TrainingMethod { return mode === "ime" ? "ime" : method(); }
-function timed(): boolean { return mode === "speed" || mode === "benchmark" || mode === "ime"; }
-function duration(): number { return mode === "speed" ? Number(durationSelect.value) : timed() ? 60 : 0; }
+function timed(): boolean { return mode === "speed" || mode === "benchmark" || mode === "ime" || mode === "focus"; }
+function duration(): number { return mode === "speed" || mode === "focus" ? Number(durationSelect.value) : timed() ? 60 : 0; }
 function level(): number { return timed() ? 5 : levelSelect.value === "auto" ? suggestedStage(profile[method()]) : Number(levelSelect.value); }
 function signature(): string { return `${mode}:${effectiveMethod()}:${duration()}:${level()}:v1`; }
-function status(message: string): void { element("lab-status").textContent = message; }
+function status(message: string, quiet = false): void {
+  element("lab-status").textContent = message;
+  app.dataset.quietStatus = String(quiet);
+}
+
+function closeFocusSettings(): void {
+  app.dataset.focusSettings = "false";
+  element("lab-focus-settings").setAttribute("aria-expanded", "false");
+}
 
 function persist(): void {
   try { localStorage.setItem(trainingStorageKey, JSON.stringify(profile)); storageAvailable = true; } catch { storageAvailable = false; }
@@ -60,6 +70,7 @@ function lockSettings(locked: boolean): void {
   element<HTMLButtonElement>("lab-reset").disabled = locked;
   element<HTMLInputElement>("lab-import").disabled = locked;
   element<HTMLButtonElement>("lab-target-review").disabled = locked;
+  element<HTMLButtonElement>("lab-focus-settings").disabled = locked;
 }
 
 function todaySeconds(): number {
@@ -138,6 +149,7 @@ function hintsVisible(): boolean {
 
 function renderHint(): void {
   const visible = hintsVisible();
+  app.dataset.hintVisible = String(visible);
   if (visible && state === "running") run.hint();
   const renderKey = `${visible}:${run.passageIndex}:${run.tokenIndex}:${run.buffer}:${state}:${mode}:${method()}`;
   if (renderKey === lastHintRender) return;
@@ -204,7 +216,7 @@ function renderMetrics(): void {
   element("lab-cpm").textContent = seconds >= 1 ? String(Math.round(run.cpm(now))) : "—";
   element("lab-accuracy").textContent = (mode === "ime" ? imeTotal : run.attempts) ? `${accuracy.toFixed(1)}%` : "—";
   element("lab-errors").textContent = String(mode === "ime" ? imeTotal - imeCorrect : run.errors);
-  element("lab-clock").textContent = state === "running" || state === "paused" ? timed() ? `${Math.max(0, duration() - Math.floor(seconds))} s` : `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}` : state === "ready" ? "READY" : "COMPLETE";
+  element("lab-clock").textContent = state === "running" || state === "paused" ? timed() ? `${Math.max(0, duration() - Math.floor(seconds))} s` : `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}` : state === "ready" ? mode === "focus" ? `${duration()} s` : "READY" : "COMPLETE";
   element<HTMLProgressElement>("lab-progress").value = timed() ? Math.min(100, seconds / duration() * 100) : run.completed / run.passages.reduce((total, passage): number => total + passage.reading.length, 0) * 100;
   element("lab-pace").textContent = pace && mode === "speed" ? `目安 ${pace}かな/分 · ${seconds >= 1 ? `${Math.round(run.completed - pace * seconds / 60)}文字` : "過去の同条件中央値＋3%"}` : mode === "ime" ? "変換後の文字で計測" : mode === "benchmark" ? "固定文 v1 / 60秒 / ガイドなし" : "正確さを保って、少しずつ。";
   renderDaily();
@@ -229,12 +241,15 @@ function prepare(): void {
   app.dataset.state = state;
   app.dataset.mode = mode;
   app.dataset.method = effectiveMethod();
+  document.body.dataset.trainingFocus = String(mode === "focus");
+  element("lab-focus-toolbar").hidden = mode !== "focus";
+  element("lab-focus-result").hidden = mode !== "focus";
   delete app.dataset.error;
   lockSettings(false);
   methodSelect.disabled = mode === "ime";
   hintsSelect.disabled = mode === "benchmark";
   element("lab-stage-control").hidden = timed();
-  element("lab-duration-control").hidden = mode !== "speed";
+  element("lab-duration-control").hidden = mode !== "speed" && mode !== "focus";
   element("lab-hints-control").hidden = mode === "ime" || mode === "benchmark";
   element("lab-ime-area").hidden = mode !== "ime";
   element("lab-keyboard").hidden = mode === "ime";
@@ -244,12 +259,12 @@ function prepare(): void {
   pauseButton.hidden = true;
   startButton.hidden = false;
   startButton.disabled = false;
-  startButton.textContent = mode === "benchmark" ? "60秒の定点測定を始める ↗" : mode === "ime" ? "60秒の実入力を始める ↗" : "練習をはじめる ↗";
+  startButton.textContent = mode === "focus" ? `${duration()}秒、集中する ↗` : mode === "benchmark" ? "60秒の定点測定を始める ↗" : mode === "ime" ? "60秒の実入力を始める ↗" : "練習をはじめる ↗";
   element<HTMLButtonElement>("lab-show-hint").disabled = mode === "benchmark" || mode === "ime";
   for (const button of modeButtons) button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
   const currentStage = curriculum[level()];
   element("lab-plan-title").textContent = timed() ? names[mode] : `${level() + 1}. ${currentStage.name}`;
-  element("lab-plan-description").textContent = mode === "learn" ? currentStage.detail : mode === "review" ? "未定着・遅い文字・復習時期の文字を含む語や文を多めに。得意な文字も混ぜます。" : mode === "speed" ? "自然な文章で流れを作る。95%以上の正確さを保って、少しずつ速く。" : mode === "benchmark" ? "学習用とは別の固定文。同じ入力方法・同じ60秒で、日を空けて測りましょう。" : "導入済みIMEで漢字変換まで。新月配列をオンにして、日本語入力へ切り替えてください。";
+  element("lab-plan-description").textContent = mode === "learn" ? currentStage.detail : mode === "review" ? "未定着・遅い文字・復習時期の文字を含む語や文を多めに。得意な文字も混ぜます。" : mode === "focus" ? "短く打って、結果を振り返る。Enterで同じ条件の次の一本へ。" : mode === "speed" ? "自然な文章で流れを作る。95%以上の正確さを保って、少しずつ速く。" : mode === "benchmark" ? "学習用とは別の固定文。同じ入力方法・同じ60秒で、日を空けて測りましょう。" : "導入済みIMEで漢字変換まで。新月配列をオンにして、日本語入力へ切り替えてください。";
   element("lab-session-label").textContent = `${names[mode]} / ${timed() ? "CONTINUOUS FLOW" : "ADAPTIVE PRACTICE"}`;
   element("lab-cpm-label").textContent = mode === "ime" ? "変換後の文字 / 分" : "かな / 分";
   element("lab-accuracy-label").textContent = mode === "ime" ? "確定文の一致率" : "打鍵正確率";
@@ -258,7 +273,7 @@ function prepare(): void {
   element("lab-input-help").textContent = mode === "ime" ? "新月配列と日本語IMEをオンに。漢字・句読点まで一致すると次の文へ。予測変換・貼り付けは使いません。" : method() === "touch" ? "画面のキーを順番にタップ。スマホで配置を覚える練習です。PCの記録とは別に保存します。" : "IMEとOS側の新月配列リマップはオフに。英数・QWERTY状態で、D/Kも順番に押します。";
   const comparison = comparableResults(profile, signature()).slice(-5);
   pace = comparison.length >= 3 ? Math.round(median(comparison.map((result): number => result.cpm)) * 1.03) : 0;
-  status("開始すると、最初の入力から計測します。");
+  status(mode === "focus" ? "最初の打鍵から計測。時間が来たら結果を確認し、Enterで次の一本へ。" : "開始すると、最初の入力から計測します。");
   renderPrompt();
   renderMetrics();
   renderHistory();
@@ -269,6 +284,7 @@ function start(): void {
   if (state === "done") prepare();
   if (state !== "ready") return;
   state = "running";
+  closeFocusSettings();
   app.dataset.state = state;
   tokenEnteredAt = performance.now();
   lockSettings(true);
@@ -277,7 +293,7 @@ function start(): void {
   pauseButton.textContent = timed() ? "中断する" : "一時停止";
   element("lab-abandon").hidden = false;
   imeInput.disabled = mode !== "ime";
-  status("最初の入力から計測。速さより、正確に。");
+  status("最初の入力から計測。速さより、正確に。", true);
   renderHint();
   const input = mode === "ime" ? imeInput : stage;
   input.focus({ preventScroll: true });
@@ -321,7 +337,7 @@ function resume(): void {
 }
 
 function extend(): void {
-  if (timed() && run.passages.length - run.passageIndex <= 2) run.append(mode === "speed" ? passages() : benchmarkCorpus);
+  if (timed() && run.passages.length - run.passageIndex <= 2) run.append(mode === "speed" || mode === "focus" ? passages() : benchmarkCorpus);
 }
 
 function feed(key: string): void {
@@ -342,8 +358,8 @@ function feed(key: string): void {
     manualHint = false;
   }
   if (run.complete) { finish(false, now); return; }
-  if (run.passageIndex !== previousPassage) status(`次の課題：${run.passage.text}。読みは「${run.passage.reading}」。`);
-  else if (correct && wasError) status("正しいキーです。そのまま続けましょう。");
+  if (run.passageIndex !== previousPassage) status(`次の課題：${run.passage.text}。読みは「${run.passage.reading}」。`, true);
+  else if (correct && wasError) status("正しいキーです。そのまま続けましょう。", true);
   renderPrompt();
   renderMetrics();
 }
@@ -423,6 +439,11 @@ function finish(interrupted: boolean, now = performance.now()): void {
   element("lab-advice-title").textContent = mode === "ime" ? "実際の仕事へ、つなげよう。" : result.accuracy < 95 ? "少し速度を落とし、正確に。" : result.assisted ? "次は、ガイドを少し減らす。" : "別の文でも、同じように。";
   element("lab-advice").textContent = mode === "ime" ? "変換の修正時間も含めた結果です。候補の選択で迷った語は、実際に使う文の中で試しましょう。" : result.accuracy < 95 ? "まずミスした文字を含む短文を復習。正確さが戻ってから、高速化へ進みましょう。" : result.assisted ? "ガイドを見ずに思い出す練習へ。自動ガイドは、迷ったときや誤打時にだけ戻ります。" : "今できたことが、明日もできるか。日を空けた復習と定点測定で確かめましょう。速さは正確さを保てる範囲で。";
   renderAnalysis();
+  element("lab-focus-cpm").textContent = String(Math.round(result.cpm));
+  element("lab-focus-accuracy").textContent = `${result.accuracy.toFixed(1)}%`;
+  element("lab-focus-summary").textContent = `${result.kana}文字 · ${Math.round(seconds)}秒 · ${methodNames[result.method]}${result.method === "touch" ? "（PC速度とは比較しません）" : ""}`;
+  element("lab-focus-tip").textContent = `${element("lab-advice-title").textContent}${nextFocus ? ` 次は「${/[a-z;]/.test(nextFocus) ? Array.from(nextFocus).join(" → ").toUpperCase() : nextFocus}」を意識して。` : ""}`;
+  element("lab-focus-storage").textContent = storageAvailable ? "この端末に保存しました。履歴は「モード選択」から。" : "この環境では記録を保存できません。「モード選択」から記録を書き出してください。";
   drawChart();
   renderHint();
   renderMetrics();
@@ -430,8 +451,13 @@ function finish(interrupted: boolean, now = performance.now()): void {
   const resultPanel = element("lab-result");
   resultPanel.hidden = false;
   status(interrupted ? "中断記録として保存しました。自己ベストには含めません。" : "練習が終わりました。結果と次の一手を確認できます。");
-  if (!interrupted && !document.hidden) { resultPanel.focus({ preventScroll: true }); resultPanel.scrollIntoView({ block: "nearest" }); }
-  if (!interrupted) beginRest();
+  if ((!interrupted || mode === "focus") && !document.hidden) { resultPanel.focus({ preventScroll: true }); resultPanel.scrollIntoView({ block: "nearest" }); }
+  if (!interrupted && mode !== "focus") beginRest();
+}
+
+function retry(): void {
+  if (mode !== "focus" || state !== "done") return;
+  start();
 }
 
 function endRest(): void {
@@ -489,6 +515,30 @@ function processIme(): void {
 }
 
 startButton.addEventListener("click", start);
+element("lab-retry").addEventListener("click", retry);
+document.addEventListener("keydown", (event): void => {
+  if (mode !== "focus" || state !== "done" || event.key !== "Enter" || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || target.closest("button, a, input, select, textarea, [contenteditable]")) return;
+  if (target !== document.body && target !== stage && !element("lab-result").contains(target)) return;
+  event.preventDefault();
+  retry();
+});
+element("lab-focus-settings").addEventListener("click", (): void => {
+  if (state === "running" || state === "paused") return;
+  const open = app.dataset.focusSettings !== "true";
+  app.dataset.focusSettings = String(open);
+  element("lab-focus-settings").setAttribute("aria-expanded", String(open));
+});
+element("lab-focus-exit").addEventListener("click", (): void => {
+  if (state === "running" || state === "paused") finish(true);
+  mode = returnMode;
+  focus = "";
+  hintsSelect.value = mode === "speed" || mode === "benchmark" ? "off" : "auto";
+  closeFocusSettings();
+  prepare();
+  modeButtons.find((button): boolean => button.dataset.mode === mode)?.focus();
+});
 pauseButton.addEventListener("click", (): void => { if (state === "paused") resume(); else pause(); });
 element("lab-abandon").addEventListener("click", (): void => finish(true));
 element("lab-rest-skip").addEventListener("click", endRest);
@@ -499,10 +549,13 @@ element("lab-show-hint").addEventListener("click", (): void => {
   if (state === "running") stage.focus({ preventScroll: true });
 });
 for (const button of modeButtons) button.addEventListener("click", (): void => {
+  if (mode !== "focus") returnMode = mode;
   mode = button.dataset.mode as TrainingMode;
   focus = "";
-  hintsSelect.value = mode === "speed" || mode === "benchmark" ? "off" : "auto";
+  hintsSelect.value = mode === "speed" || mode === "benchmark" || mode === "focus" ? "off" : "auto";
+  closeFocusSettings();
   prepare();
+  if (mode === "focus") { startButton.focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: "instant" }); }
 });
 for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect]) control.addEventListener("change", (): void => { focus = ""; prepare(); });
 element("lab-target-review").addEventListener("click", (): void => {
@@ -554,7 +607,7 @@ imeInput.addEventListener("beforeinput", (event): void => {
 });
 for (const input of [stage, imeInput]) input.addEventListener("blur", (event): void => {
   const next = event.relatedTarget;
-  if (next instanceof Element && (next.closest(".lab-key") || ["lab-pause", "lab-abandon", "lab-show-hint"].includes(next.id))) return;
+  if (next instanceof Element && (next.closest(".lab-key") || ["lab-pause", "lab-abandon", "lab-show-hint", "lab-focus-exit"].includes(next.id))) return;
   if (state === "running") pause();
 });
 window.addEventListener("blur", (): void => { if (state === "running") pause(); });
