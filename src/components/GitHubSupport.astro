@@ -1,0 +1,22 @@
+---
+interface Props {
+  location: string;
+}
+
+const { location } = Astro.props;
+---
+
+<aside class="rounded-xl border border-brand-500/30 bg-brand-500/5 p-6 text-center" aria-label="GitHub で新月配列を見る">
+  <h2 class="text-xl font-bold text-white">新月配列を試してみませんか？</h2>
+  <p class="mt-3 text-sm leading-relaxed text-slate-300">
+    設定ファイルは GitHub で無料公開しています。
+    気に入ったら、リポジトリに Star を付けて応援していただけるとうれしいです。
+  </p>
+  <a
+    href="https://github.com/nagamine-git/shingetsu-layout"
+    class="mt-5 inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-brand-500 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+    data-track="github_star_cta_click"
+    data-track-loc={location}
+  >GitHub で設定ファイル・Star を確認する <span aria-hidden="true" class="ml-2">→</span></a>
+  <p class="mt-3 text-xs text-slate-400">利用に Star や GitHub アカウントは必要ありません。</p>
+</aside>

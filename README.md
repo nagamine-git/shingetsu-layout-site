@@ -50,6 +50,13 @@ Cloudflare Pages に接続し、以下を設定する。
 - `/blog/[slug]` -- 記事詳細
 - `/contact` -- お問い合わせフォーム
 
+## グロース運用
+
+- [KPI ツリーと月・週・日 PDCA](GROWTH-OPERATIONS.md)
+- [基準値・実験記録](GROWTH.md)
+- `pnpm --silent growth:snapshot`: GitHub の Star・トラフィックを取得
+- `bash scripts/growth-cycle.sh daily`: 取得と日次レビューを実行（週次は `weekly`、月次は `monthly`）
+
 ## 関連リポジトリ
 
 - [nagamine-git/shingetsu-layout](https://github.com/nagamine-git/shingetsu-layout) -- 新月配列の定義データ・設定ファイル本体
