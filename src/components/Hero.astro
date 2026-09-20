@@ -37,6 +37,7 @@ const extensions = layoutData.layers[2].keys;
     <div class="hero-art">
       <Eclipse />
       <p class="hero-art-signature" aria-hidden="true">SHINGETSU <span>新月</span></p>
+      <button type="button" class="moon-replay" hidden>↻ 三日月から再生</button>
     </div>
   </div>
 
@@ -85,6 +86,20 @@ const extensions = layoutData.layers[2].keys;
   const precisePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
   let lunarAnimation: Animation | undefined;
   let pendingFrame = 0;
+  const replayButton = document.querySelector<HTMLButtonElement>(".moon-replay");
+  const phaseShadow = document.querySelector<SVGElement>(".eclipse-phase-shadow");
+  let phaseAnimation: Animation | undefined;
+  if (replayButton && phaseShadow && typeof phaseShadow.animate === "function") {
+    replayButton.hidden = false;
+    replayButton.addEventListener("click", (): void => {
+      if (reducedMotion.matches) return;
+      phaseShadow.getAnimations().forEach((animation): void => animation.cancel());
+      phaseAnimation = phaseShadow.animate(
+        [{ transform: "translateX(-72px)" }, { transform: "translateX(0)" }],
+        { duration: 6000, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" },
+      );
+    });
+  }
 
   function moveMoon(horizontal: number, vertical: number): void {
     if (!lunarSurface || reducedMotion.matches || !precisePointer.matches) return;
@@ -117,6 +132,7 @@ const extensions = layoutData.layers[2].keys;
       cancelAnimationFrame(pendingFrame);
       pendingFrame = 0;
       lunarAnimation?.cancel();
+      phaseAnimation?.cancel();
     }
   });
 </script>
