@@ -32,13 +32,19 @@ GitHub のトラフィックは直近 14 日の集計。任意の保存先へ JS
 
 ## 実験 1: 体験後・記事読了後の GitHub 導線
 
-2026-09-20: ユーザーがコミット・push・本番公開を「すべて承認」。この変更一式について承認待ちは解消。公開成功・本番HTMLの確認後に観測開始日時を追記する。既存の未追跡 VideoDemo.astro は今回の変更対象に含めない。
+2026-09-20: ユーザーがコミット・push・本番公開を「すべて承認」。この変更一式について承認待ちは解消。既存の未追跡 VideoDemo.astro は今回の変更対象に含めない。
+
+本番反映確認: **2026-09-20 17:45:08 JST（08:45:08 UTC）**。この時刻を観測開始とする。PR #7、実装コミット `7359dec941d836990a7a71da992cd558dc9b18f8`、main のマージコミット `9b57670cc191a0dc7e7921e76c2e19be1efd0779`。GitHub Actions run `35500375456` が成功し、本番トップ・全10記事で CTA を各1個、トップの Windows 案内と llms.txt の変更を確認した。
+
+- 初回判定は2026-09-27 17:45 JST以降（定例では9月28日週報）。9月21日週報は公開・取得状況の確認に限定する。
+- 開始時の直近確認は3 Star。GAイベントの実受信・セッション集計は未確認のため、現時点ではStar純増とGitHubトラフィックを観測する。CTA転換率の判定はデータ取得後とする。
+- Windows案内の修正も同時公開したため、Star増減をCTA単独の効果として解釈しない。
 
 仮説: デモ体験や記事閲覧で関心を持った読者に、設定ファイルと任意の Star の案内を示すと、リポジトリ訪問が増える。
 
 - 変更: LP のデモ直後とブログ記事末尾に共通の案内を追加。
 - 計測: 既存の GA イベント処理で `github_star_cta_click` を送信。`location` に設置位置または記事 ID を記録。
-- 状態: ローカル実装。公開日時・公開コミットは未記録。
+- 状態: 本番公開確認済み・観測中。公開情報は上記を参照。
 - 検証: `pnpm build` 成功。生成 HTML の LP と全 10 記事で CTA が各 1 個あり、対象リポジトリへのリンクが存在することを確認。`git diff --check` 成功。GA の実受信は未確認。
 - 評価: 公開後 7 日を最初の観測期間とし、対象ページの閲覧数、CTA クリック、GitHub Star 純増を記録する。流入が少なければ効果を断定せず観測期間を延長。
 - 注意: サイトのクリックと GitHub の Star は個人単位で結び付けられない。Star 増加を本変更だけの効果と断定しない。
@@ -46,7 +52,7 @@ GitHub のトラフィックは直近 14 日の集計。任意の保存先へ JS
 
 ## 次の改善候補
 
-導入案内の追加修正（未公開）: hazkey の上流 README と公式ドキュメントは Linux / Fcitx 5 向けで、サイトの Windows 向け案内と一致しなかった。Windows は本体リポジトリに存在する Google 日本語入力用 `shingetsu-romantable.txt` への案内に変更し、実機未検証・設定の退避と復元を明記。FAQ と日英 llms.txt も同期。配布ファイルへのクリックは `install_file_click` / `location=windows` で測定する。
+導入案内の追加修正（2026-09-20公開確認済み）: hazkey の上流 README と公式ドキュメントは Linux / Fcitx 5 向けで、サイトの Windows 向け案内と一致しなかった。Windows は本体リポジトリに存在する Google 日本語入力用 `shingetsu-romantable.txt` への案内に変更し、実機未検証・設定の退避と復元を明記。FAQ と日英 llms.txt も同期。配布ファイルへのクリックは `install_file_click` / `location=windows` で測定する。
 
 - 上流: https://github.com/7ka-Hiira/hazkey
 - 配布テーブル: https://github.com/nagamine-git/shingetsu-layout/blob/main/shingetsu-romantable.txt
