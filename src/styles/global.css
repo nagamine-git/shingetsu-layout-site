@@ -323,6 +323,7 @@ main > .pt-28 > h1, main > article h1 { font-family: var(--font-editorial); font
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .eclipse-contact { opacity: 0 !important; }
+  .eclipse { transform: none !important; filter: none !important; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 @media (forced-colors: active) {
