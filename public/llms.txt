@@ -76,7 +76,8 @@
 ## インストール
 
 - macOS: Karabiner-Elements (Homebrew 経由)
-- Windows / Linux: hazkey
+- Windows: Google 日本語入力用 shingetsu-romantable.txt を配布（Windows 実機での入力動作は未検証）
+- Linux: hazkey（Fcitx 5）
 
 詳細は [GitHub リポジトリ README](https://github.com/nagamine-git/shingetsu-layout) を参照してください。
 
@@ -85,7 +86,7 @@
 - **ローマ字入力との違いは?** ローマ字入力は「か」に k+a の 2 打鍵が必要。新月配列は前置シフト方式で、高頻度のかなを 1 打鍵、中頻度を ☆/★ に続けて打つ 2 打鍵で入力する。頻度に応じて打鍵数を割り当て、頻出文字をホームポジション周辺に集約して全体の打鍵数と指の移動量を抑える。
 - **JIS かな入力との違いは?** JIS かな入力は数字行を含む 4 行にかなが分散するが、新月配列は 30 キー（英字 3 行）に集約し、前置シフトでホームポジション周辺だけで入力を完結させる。
 - **前置シフトとは?** シフトキーを押しながらではなく、先に ☆ または ★ キーを打ってから文字キーを打つ月配列譲りの方式。中頻度は「☆→文字」の 2 打鍵、濁音・半濁音・小文字は「☆→該当キー→文字」の 3 打鍵。
-- **対応 OS は?** macOS は Karabiner-Elements に shingetsu-karabiner-qwerty.json、Windows・Linux は hazkey に shingetsu-ansi-qwerty.tsv（または Colemak 版）をインポートして導入できる。
+- **対応 OS は?** macOS 向けは Karabiner-Elements 用 shingetsu-karabiner-qwerty.json、Windows 向けは Google 日本語入力用 shingetsu-romantable.txt、Linux 向けは hazkey 用 shingetsu-ansi-qwerty.tsv（または Colemak 版）を配布。Windows 実機での入力動作は未検証。変更前に現在の設定を保存する。
 - **濁音・半濁音の入力は?** 濁音（゛）・半濁音（゜）・小文字を 1 キーに統合し、☆ →（濁音・半濁音・小文字）キー → 文字 の 3 打鍵（前置シフト）で入力する。
 - **習得は難しい?** 新しい配列のため学習コストはあるが、よく使う文字ほど少ない打鍵数に割り当てた一貫した設計で、ホームポジションと前置シフトの規則を覚えれば段階的に習得できる。
 - **費用は?** 配列定義・設定ファイルは GitHub で MIT ライセンスのもと公開され、無料で利用できる。
@@ -113,7 +114,8 @@
 
 ## Platforms / install
 - macOS: import `shingetsu-karabiner-qwerty.json` into Karabiner-Elements.
-- Windows / Linux: import `shingetsu-ansi-qwerty.tsv` (or the Colemak variant) into hazkey.
+- Windows: `shingetsu-romantable.txt` is provided for Google Japanese Input. Typing behavior on Windows has not been verified; back up the existing table before importing.
+- Linux: import `shingetsu-ansi-qwerty.tsv` (or the Colemak variant) into hazkey for Fcitx 5.
 - Definition and config files: https://github.com/nagamine-git/shingetsu-layout (MIT, free).
 
 ## How it compares

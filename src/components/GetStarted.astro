@@ -23,15 +23,21 @@ const steps = {
   windows: [
     {
       num: 1,
-      title: "hazkey を入手",
+      title: "Google 日本語入力を用意",
       code: null,
-      note: "hazkey は Windows / Linux 向けの日本語入力ソフトウェアです。GitHub リポジトリからインストール方法をご確認ください。",
+      note: "Windows では <a href='https://www.google.co.jp/ime/' class='underline'>Google 日本語入力</a>用のローマ字テーブルを配布しています。変更前に、現在のローマ字テーブルをエクスポートして保存してください。",
     },
     {
       num: 2,
-      title: "新月配列の設定を適用",
+      title: "Google 日本語入力用テーブルを取得",
       code: null,
-      note: "リポジトリの <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>shingetsu-ansi-qwerty.tsv</code>（Colemak をお使いの場合は <code class='text-green-300 bg-[var(--color-surface)] px-1 rounded text-xs'>shingetsu-ansi-colemak.tsv</code>）を hazkey のローマ字テーブルとしてインポートし、新月配列を有効にします。",
+      note: "<a href='https://github.com/nagamine-git/shingetsu-layout/blob/main/shingetsu-romantable.txt' class='underline' data-track='install_file_click' data-track-loc='windows'>shingetsu-romantable.txt</a> を開き、GitHub の Download raw file から保存します。hazkey 用 TSV とは別のファイルです。",
+    },
+    {
+      num: 3,
+      title: "ローマ字テーブルを変更",
+      code: null,
+      note: "Google 日本語入力のプロパティでローマ字テーブルの編集画面を開き、保存したファイルをインポートします。入力方法はローマ字入力に設定します。配布テーブルの Windows 実機での入力動作は未検証です。うまく入力できない場合は、保存しておいた元のテーブルに戻してください。",
     },
   ],
   linux: [
@@ -39,7 +45,7 @@ const steps = {
       num: 1,
       title: "hazkey を入手",
       code: null,
-      note: "hazkey は Linux にも対応しています。ビルド方法・依存関係については GitHub リポジトリの README をご参照ください。",
+      note: "hazkey は Linux の Fcitx 5 向け日本語入力です。<a href='https://hazkey.hiira.dev/docs/' class='underline'>hazkey 公式ドキュメント</a>で、お使いの環境のインストール方法をご確認ください。",
     },
     {
       num: 2,

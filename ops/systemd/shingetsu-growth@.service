@@ -1,0 +1,10 @@
+[Unit]
+Description=Shingetsu growth %i PDCA review
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/ghq/github.com/nagamine-git/shingetsu-layout-site
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/installs/node/lts/bin:/usr/local/bin:/usr/bin
+ExecStart=/usr/bin/bash scripts/growth-cycle.sh %i
+TimeoutStartSec=20min
+UMask=0077
