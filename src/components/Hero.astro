@@ -11,6 +11,7 @@ const extensions = layoutData.layers[2].keys;
 ---
 
 <section class="hero" aria-labelledby="hero-title">
+  <div class="hero-flash" aria-hidden="true"></div>
   <div class="hero-main page-width">
     <div class="hero-copy">
       <p class="eyebrow"><span class="status-light" aria-hidden="true"></span>日本語 かな配列</p>
@@ -111,7 +112,7 @@ const extensions = layoutData.layers[2].keys;
   if (replayButton && phaseShadow && typeof phaseShadow.animate === "function") {
     const phase = phaseShadow.animate(
       [
-        { transform: "translateX(-85px) scale(.94)", offset: 0, easing: "cubic-bezier(.4,0,.2,1)" },
+        { transform: "translateX(-85px) scale(.8)", offset: 0, easing: "cubic-bezier(.4,0,.2,1)" },
         { transform: "translateX(0) scale(1)", offset: .8, easing: "linear" },
         { transform: "translateX(0) scale(1)", offset: 1 },
       ],
@@ -180,6 +181,23 @@ const extensions = layoutData.layers[2].keys;
       impact.pause();
       impact.currentTime = 0;
       moonAnimations.push(impact);
+    }
+    const flash = document.querySelector<HTMLElement>(".hero-flash");
+    if (flash) {
+      const exposure = flash.animate(
+        [
+          { opacity: 0, offset: 0 },
+          { opacity: 0, offset: .8, easing: "ease-out" },
+          { opacity: .85, offset: .82, easing: "ease-in-out" },
+          { opacity: .3, offset: .87, easing: "ease-out" },
+          { opacity: 0, offset: .97 },
+          { opacity: 0, offset: 1 },
+        ],
+        { duration: 8000, fill: "forwards" },
+      );
+      exposure.pause();
+      exposure.currentTime = 0;
+      moonAnimations.push(exposure);
     }
     screenImpact = document.body.animate(
       [
