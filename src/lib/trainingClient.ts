@@ -224,11 +224,11 @@ function renderMetrics(): void {
 
 function passages(): Passage[] { return selectPassages(profile, method(), mode, level(), Date.now(), Math.random, focus); }
 
-function prepare(): void {
+function prepare(retryPassages?: Passage[]): void {
   clearInterval(timer);
   clearInterval(restTimer);
   state = "ready";
-  run = new TrainingRun(passages());
+  run = new TrainingRun(retryPassages ?? passages());
   lastHintRender = "";
   manualHint = false;
   imeValue = "";
@@ -244,6 +244,7 @@ function prepare(): void {
   document.body.dataset.trainingFocus = String(mode === "focus");
   element("lab-focus-toolbar").hidden = mode !== "focus";
   element("lab-focus-result").hidden = mode !== "focus";
+  element("lab-focus-shortcut").hidden = mode !== "focus" || method() !== "keyboard";
   delete app.dataset.error;
   lockSettings(false);
   methodSelect.disabled = mode === "ime";
@@ -408,7 +409,7 @@ function drawChart(): void {
   element("lab-chart-note").textContent = mode === "ime" ? "縦軸：変換後の文字/分 · 横軸：経過秒。未確定の変換は含みません。" : `縦軸：かな/分 · 横軸：経過秒。累積平均。リズム ${rhythmValue === null ? "—（10標本未満）" : `${rhythmValue}/100（独自参考値）`}。`;
 }
 
-function finish(interrupted: boolean, now = performance.now()): void {
+function finish(interrupted: boolean, now = performance.now(), showResult = true): void {
   if (state !== "running" && state !== "paused") return;
   clearInterval(timer);
   run.interrupted ||= interrupted;
@@ -432,6 +433,7 @@ function finish(interrupted: boolean, now = performance.now()): void {
   const previousBest = Math.max(0, ...previous.map((entry): number => entry.cpm));
   saveSession(profile, result, run.assessmentSamples, run.pairs, run.passages.slice(0, run.passageIndex).map((passage): string => passage.id));
   persist();
+  if (!showResult) return;
   const comparable = comparableResults(profile, result.signature).includes(result);
   element("lab-result-tag").textContent = interrupted ? "中断 · 参考記録" : comparable && result.cpm > previousBest ? "同条件での自己ベスト" : result.assisted ? "ガイドあり · 学習記録" : comparable ? "比較可能な記録" : "参考記録";
   element("lab-result-summary").textContent = `${Math.round(result.cpm)} ${mode === "ime" ? "変換後の文字" : "かな"}/分 · ${mode === "ime" ? "一致率" : "打鍵正確率"} ${result.accuracy.toFixed(1)}% · ${result.kana}文字 · ${Math.round(seconds)}秒。${method() === "touch" && mode !== "ime" ? "タップの記録です。PC速度とは比較しません。" : ""}`;
@@ -458,6 +460,15 @@ function finish(interrupted: boolean, now = performance.now()): void {
 function retry(): void {
   if (mode !== "focus" || state !== "done") return;
   start();
+}
+
+function restart(): void {
+  if (mode !== "focus" || (state !== "ready" && state !== "running" && state !== "done")) return;
+  const retryPassages = [...run.passages];
+  if (state === "running") finish(true, performance.now(), false);
+  prepare(retryPassages);
+  start();
+  status("同じ課題を最初から。次の打鍵から計測します。", true);
 }
 
 function endRest(): void {
@@ -517,9 +528,16 @@ function processIme(): void {
 startButton.addEventListener("click", start);
 element("lab-retry").addEventListener("click", retry);
 document.addEventListener("keydown", (event): void => {
-  if (mode !== "focus" || state !== "done" || event.key !== "Enter" || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+  if (mode !== "focus" || event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
   const target = event.target;
-  if (!(target instanceof HTMLElement) || target.closest("button, a, input, select, textarea, [contenteditable]")) return;
+  if (!(target instanceof HTMLElement) || target.closest("input, select, textarea, [contenteditable]")) return;
+  if (event.key === "Escape") {
+    if (target !== document.body && !target.closest(".lab-console, #lab-result")) return;
+    event.preventDefault();
+    restart();
+    return;
+  }
+  if (state !== "done" || event.key !== "Enter" || target.closest("button, a")) return;
   if (target !== document.body && target !== stage && !element("lab-result").contains(target)) return;
   event.preventDefault();
   retry();
@@ -571,7 +589,10 @@ element("lab-target-review").addEventListener("click", (): void => {
 
 stage.addEventListener("keydown", (event): void => {
   if (event.target !== stage || state !== "running" || mode === "ime" || method() !== "keyboard" || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
-  if (event.key === "Escape") { event.preventDefault(); pause(); return; }
+  if (event.key === "Escape") {
+    if (mode !== "focus") { event.preventDefault(); pause(); }
+    return;
+  }
   if (event.key === "Tab") return;
   if (event.isComposing || event.key === "Process" || event.key === "Dead" || /[^\x00-\x7f]/.test(event.key)) {
     status("シミュレーターではIMEとOSのキー変換をオフにしてください。導入済みIMEで打つ場合は「IME実践」へ。");
