@@ -41,6 +41,7 @@ const websiteJsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preload" href="/fonts/shippori-mincho-medium.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/noto-sans-jp.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="canonical" href={canonicalURL} />
     <meta name="robots" content={robots} />
 
@@ -72,24 +73,6 @@ const websiteJsonLd = {
     <link rel="dns-prefetch" href="//challenges.cloudflare.com" />
     <link rel="dns-prefetch" href="//static.cloudflareinsights.com" />
 
-    <!-- Fonts: non-render-blocking (media="print" trick) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
-    />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" />
-    </noscript>
-
     <!-- WebSite JSON-LD -->
     <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
 
@@ -107,8 +90,9 @@ const websiteJsonLd = {
         <div class="site-nav-links">
           <a href="/#features" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">特徴</a>
           <a href="/#get-started" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">導入方法</a>
-          <a href="/blog" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">ブログ</a>
-          <a href="/contact" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">お問い合わせ</a>
+          <a href="/#practice" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">練習室</a>
+          <a href="/blog" aria-current={Astro.url.pathname.startsWith('/blog') ? 'page' : undefined} class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">ブログ</a>
+          <a href="/contact" aria-current={Astro.url.pathname.startsWith('/contact') ? 'page' : undefined} class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">お問い合わせ</a>
         </div>
       </nav>
     </header>
@@ -137,6 +121,8 @@ const websiteJsonLd = {
 
     <!-- AARRR 計測: track() ヘルパー + data-track 属性の汎用クリック計測 -->
     <script>
+      import "../lib/reveal";
+
       window.track = (name, params = {}) => {
         // gtag 未ロード（広告ブロック等）でも落ちないように optional chaining
         window.gtag?.("event", name, params);
@@ -152,28 +138,6 @@ const websiteJsonLd = {
         window.track(name, el.dataset.trackLoc ? { location: el.dataset.trackLoc } : {});
       });
 
-      const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-      if ("IntersectionObserver" in window) {
-        const observer = new IntersectionObserver((entries): void => {
-          for (const entry of entries) {
-            if (!entry.isIntersecting) continue;
-            if (!motionPreference.matches && entry.target instanceof HTMLElement) {
-              entry.target.animate?.(
-                [{ opacity: 0.65, transform: "translateY(20px)" }, { opacity: 1, transform: "translateY(0)" }],
-                { duration: 700, easing: "cubic-bezier(.22,1,.36,1)" },
-              );
-            }
-            observer.unobserve(entry.target);
-          }
-        }, { threshold: 0.12 });
-        document.querySelectorAll("[data-reveal]").forEach((element): void => observer.observe(element));
-        motionPreference.addEventListener("change", (): void => {
-          if (motionPreference.matches) document.getAnimations?.().forEach((animation): void => {
-            const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null;
-            if (target instanceof HTMLElement && target.hasAttribute("data-reveal")) animation.cancel();
-          });
-        });
-      }
     </script>
   </body>
 </html>
