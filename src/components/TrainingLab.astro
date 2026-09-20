@@ -1,0 +1,136 @@
+---
+import layout from "../data/layout.json";
+import { curriculum, trainingCorpus } from "../data/trainingCorpus";
+const modes = [
+  { id: "learn", number: "01", title: "習得", sub: "ことばで覚える" },
+  { id: "review", number: "02", title: "復習", sub: "苦手を、得意に" },
+  { id: "speed", number: "03", title: "高速化", sub: "正確さの、その先" },
+  { id: "benchmark", number: "04", title: "定点測定", sub: "同じ条件で比べる" },
+  { id: "ime", number: "05", title: "IME実践", sub: "変換まで、実際に" },
+];
+---
+
+<div id="training-lab" class="training-lab" hidden>
+  <nav class="lab-modes" aria-label="トレーニングの種類">
+    {modes.map((mode) => <button type="button" data-mode={mode.id} aria-pressed={mode.id === "learn"}>
+      <span class="lab-mode-number">{mode.number}</span><span><strong>{mode.title}</strong><small>{mode.sub}</small></span>
+    </button>)}
+  </nav>
+  <div class="lab-workspace">
+    <aside id="lab-settings" class="lab-plan" aria-label="練習プラン">
+      <p class="lab-eyebrow">YOUR NEXT STEP</p>
+      <h2 id="lab-plan-title">ことばの入口</h2>
+      <p id="lab-plan-description">まずは意味のある短いことばから。</p>
+      <div class="lab-controls">
+        <label for="lab-method">入力方法</label>
+        <select id="lab-method"><option value="keyboard">PCキーボード</option><option value="touch">画面タップ · 配置を覚える</option></select>
+        <div id="lab-stage-control"><label for="lab-level">練習する段階</label><select id="lab-level"><option value="auto">自動 · 記録から選ぶ</option>{curriculum.map((stage, index) => <option value={index}>{index + 1}. {stage.name}</option>)}</select></div>
+        <div id="lab-duration-control" hidden><label for="lab-duration">テスト時間</label><select id="lab-duration"><option value="30">30秒 · 短く集中</option><option value="60" selected>60秒 · 標準</option><option value="120">120秒 · 持続力</option></select></div>
+        <div id="lab-hints-control"><label for="lab-hints">打鍵ガイド</label><select id="lab-hints"><option value="auto">自動 · 覚えたら隠す</option><option value="on">常に表示</option><option value="off">表示しない</option></select></div>
+      </div>
+      <div class="lab-daily">
+        <div><span>今日の積み重ね</span><strong id="lab-today">0 / 10 分</strong></div>
+        <progress id="lab-daily-progress" max="600" value="0" aria-label="今日の練習時間"></progress>
+        <p>10分は目安。短く分けて、無理のない範囲で。</p>
+      </div>
+      <div class="lab-focus-card"><span class="lab-eyebrow">FOCUS</span><p id="lab-focus">速さより、迷わず正確に。</p><p id="lab-due" class="lab-muted"></p></div>
+      <a class="lab-guide-link" href="#lab-how">使い方・入力設定 ↗</a>
+    </aside>
+    <section class="lab-console" aria-label="タイピングエリア">
+      <div class="lab-console-top"><span id="lab-session-label">適応レッスン</span><span id="lab-clock">READY</span></div>
+      <progress id="lab-progress" max="100" value="0" aria-label="この練習の進み具合"></progress>
+      <p id="lab-input-help" class="lab-input-help">IMEとOS側の新月配列リマップはオフに。英数・QWERTY状態で、D/Kも順番に押します。</p>
+      <div class="lab-actions">
+        <button id="lab-start" type="button" class="button-primary">練習をはじめる <span aria-hidden="true">↗</span></button>
+        <button id="lab-pause" type="button" class="lab-secondary" hidden>一時停止</button>
+        <button id="lab-abandon" type="button" class="lab-secondary" hidden>終了する</button>
+        <button id="lab-show-hint" type="button" class="lab-secondary">ヒントを見る</button>
+        <a href="#lab-settings" class="lab-mobile-settings">練習設定 ↓</a>
+      </div>
+      <div class="lab-live" aria-label="現在の成績">
+        <div><strong id="lab-cpm">—</strong><span id="lab-cpm-label">かな / 分</span></div>
+        <div><strong id="lab-accuracy">—</strong><span id="lab-accuracy-label">打鍵正確率</span></div>
+        <div><strong id="lab-errors">0</strong><span id="lab-errors-label">ミス打鍵</span></div>
+        <div class="lab-pace"><span id="lab-pace">正確さから、速さへ。</span></div>
+      </div>
+      <div id="lab-stage" class="lab-stage" tabindex="0" role="group" aria-label="新月配列の打鍵入力エリア" aria-describedby="lab-input-help lab-status">
+        <div class="lab-passage-label"><span id="lab-topic">暮らしのことば</span><span id="lab-counter"></span></div>
+        <p id="lab-meaning" class="lab-meaning"></p>
+        <p id="lab-prompt" class="lab-prompt" aria-label="入力する読み"></p>
+        <div id="lab-key-guide" class="lab-key-guide" aria-label="次の打鍵のヒント"></div>
+        <p id="lab-next" class="lab-next"></p>
+      </div>
+      <div id="lab-ime-area" class="lab-ime-area" hidden>
+        <label for="lab-ime-input">上の文章を、漢字変換して入力</label>
+        <textarea id="lab-ime-input" rows="3" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="lab-input-help" placeholder="開始後、ここに入力してください" disabled></textarea>
+        <p class="lab-muted">句読点まで一致すると次の文へ。誤字はBackspaceで修正。予測変換・貼り付けは使わずに。</p>
+      </div>
+      <p id="lab-status" class="lab-status" role="status" aria-live="polite">開始すると、最初の打鍵から計測します。</p>
+      <div id="lab-keyboard" class="lab-keyboard" aria-label="新月配列のキーガイドとタップ入力">
+        {layout.layers[0].keys.map((row, rowIndex) => <div class="lab-key-row" data-row={rowIndex}>
+          {row.map((key, columnIndex) => <button type="button" class="lab-key" data-key={key} aria-label={`${key.toUpperCase()}、${layout.layers[1].keys[rowIndex][columnIndex]}`}>
+            <span>{key.toUpperCase()}</span><strong>{layout.layers[1].keys[rowIndex][columnIndex]}</strong>
+          </button>)}
+        </div>)}
+        <div id="lab-punctuation" class="lab-punctuation"><button type="button" class="lab-key" data-key="[" aria-label="左角括弧キー、かぎ括弧開き">[ <strong>「</strong></button><button type="button" class="lab-key" data-key="]" aria-label="右角括弧キー、かぎ括弧閉じ">] <strong>」</strong></button><span>D＝★前置 / K＝☆前置 / L＝濁点</span></div>
+      </div>
+      <div id="lab-rest" class="lab-rest" hidden><strong>手を離して、一息。</strong><p id="lab-rest-text">20秒を目安に、遠くを見たり、肩の力を抜いたり。</p><button id="lab-rest-skip" type="button" class="lab-secondary">休憩を終える</button></div>
+    </section>
+  </div>
+  <section id="lab-result" class="lab-result" aria-labelledby="lab-result-title" tabindex="-1" hidden>
+    <div class="lab-result-heading"><div><p class="lab-eyebrow">SESSION COMPLETE</p><h2 id="lab-result-title">一歩、指に馴染んだ。</h2></div><p id="lab-result-tag"></p></div>
+    <p id="lab-result-summary"></p>
+    <div class="lab-result-grid">
+      <div><h3>このセッションのペース</h3><svg id="lab-chart" viewBox="0 0 640 170" role="img" aria-label="経過秒数と累積平均入力速度"><path class="lab-chart-grid" d="M35 15V140H620 M35 78H620"/><path id="lab-chart-line" d=""/><text id="lab-chart-max" x="2" y="20"></text><text x="16" y="143">0</text><text x="35" y="164">0秒</text><text id="lab-chart-end" x="555" y="164"></text></svg><p id="lab-chart-note" class="lab-muted"></p></div>
+      <div class="lab-next-step"><span class="lab-eyebrow">NEXT / 次の一手</span><h3 id="lab-advice-title"></h3><p id="lab-advice"></p><button id="lab-target-review" type="button" class="lab-secondary">この弱点を文で復習 →</button></div>
+    </div>
+    <div class="lab-analysis-grid"><div><h3>迷いやすい文字</h3><ul id="lab-weak-list"></ul></div><div><h3>遅い2打鍵 · この入力方法の累積</h3><ul id="lab-pair-list"></ul></div></div>
+  </section>
+  <section class="lab-records" aria-labelledby="lab-records-title">
+    <div class="lab-records-heading"><div><p class="lab-eyebrow">YOUR PROGRESS</p><h2 id="lab-records-title">昨日より、自然に。</h2></div><p id="lab-history-summary">記録はこの端末だけに。</p></div>
+    <div class="lab-skill-heading"><h3>かなの習熟マップ</h3><p>○ 安定 · ◐ 練習中 · — 未練習</p></div>
+    <div id="lab-skill-map" class="lab-skill-map"></div>
+    <p class="lab-muted">「安定」は、自力での試行・誤打が直近6回以上あり、正答率95%以上・打鍵あたり中央値1.5秒以内。ガイドに頼った正答は判定に含めません。自動段階は対象文字の80%が安定すると進みます。医学的な判定ではなく、本ツール独自の目安です。</p>
+    <div class="lab-table-scroll"><table class="lab-history-table"><caption>直近8回の記録 · 条件の異なる速度は比較しません</caption><thead><tr><th scope="col">日時</th><th scope="col">内容・入力</th><th scope="col">速度</th><th scope="col">正確率 / 一致率</th><th scope="col">条件</th></tr></thead><tbody id="lab-history"></tbody></table></div>
+    <details class="lab-storage"><summary>保存・バックアップ・プライバシー</summary><p id="lab-storage-message">成績はこのブラウザのlocalStorageに保存します。アカウント・同期はありません。</p><p>入力文や打鍵ログをサーバーへ送信しません。バックアップには文字別の集計と練習結果を含みます。サイト共通のアクセス解析は利用しています。</p><div class="lab-storage-actions"><button id="lab-export" type="button" class="lab-secondary">記録を書き出す</button><label class="lab-secondary" for="lab-import">記録を読み込む</label><input id="lab-import" type="file" accept="application/json,.json"/><button id="lab-reset" type="button" class="lab-secondary">この練習の記録を削除</button></div><p id="lab-data-status" role="status"></p></details>
+  </section>
+</div>
+<noscript><p class="lab-nojs">タイピング練習にはJavaScriptが必要です。以下の使い方・学習方針と<a href="/#layers">配列図</a>はそのまま読めます。</p></noscript>
+<section id="lab-how" class="lab-explainer" aria-labelledby="lab-how-title">
+  <p class="lab-eyebrow">PRACTICE WITH INTENTION</p><h2 id="lab-how-title">ただ打つ、で終わらない。</h2>
+  <div class="lab-principles">
+    <article><span>01 / ACQUIRE</span><h3>意味から、指へ。</h3><p>{trainingCorpus.length}件の書き下ろし語・短文を使います。キー位置を覚え、短い文へ。文字を無作為に並べた問題は出しません。ガイドは、同じ文字を3回経験すると自動で隠れ、迷ったときだけ戻ります。</p></article>
+    <article><span>02 / RETAIN</span><h3>忘れる前に、別の文で。</h3><p>間違い・迷い・復習期限をもとに出題を調整。できた文字も混ぜます。復習の間隔は1・3・7・14日を目安に広げます。結果直後の復習だけでなく、日を空けて思い出せるかを確かめます。</p></article>
+    <article><span>03 / ACCELERATE</span><h3>速さを、分解する。</h3><p>30・60・120秒で自然な文を連続入力。ミスした文字と遅い2打鍵を分析し、その組み合わせを含む別の文章へ戻ります。定点測定は学習用とは別の固定文・60秒・ヒントなしです。</p></article>
+  </div>
+  <details open><summary>最初に：PC・スマートフォン・導入済みIMEの使い分け</summary><div>
+    <p><strong>習得・復習・高速化・定点測定：</strong>配列のインストール不要。PCはIMEをオフ、OSのキー変換もオフの英数QWERTY状態にしてください。物理キーの位置を採点します。D/Kは前置シフトなので、同時押しではなく順に押します。濁点はL、半濁点はLを2回。正しい別打鍵経路も受け付けます。誤打では進まないため、Backspaceでの修正は不要です。</p>
+    <p><strong>IME実践：</strong><a href="/#get-started">新月配列を導入</a>した環境で日本語IMEをオンにし、表示の漢字・句読点まで入力します。他の配列でも動くため、配列の自動判定や本人確認はしていません。変換後の文字/分で測り、かな/分とは比較しません。</p>
+    <p><strong>スマートフォン：</strong>画面タップで配置を学習できます。外付けキーボードも選べます。タップの記録はPCと独立し、PCの運動技能を同等に鍛えるものではありません。IME実践は端末の日本語キーボードを使います。</p>
+    <p><strong>操作：</strong>開始後は最初の入力から計測。Escで一時停止／時間制テストは終了。Tabは通常のフォーカス移動に使えます。タイピング中に別の画面へ移動すると学習は停止、時間制テストは中断記録になり自己ベストから除外します。</p>
+  </div></details>
+  <details><summary>数字の読み方と、公平な比較</summary><div>
+    <p>シミュレーターの速度＝完了したかな・句読点数÷計測分数。拗音は「きゃ」で2文字。正確率＝正しい打鍵÷全採点打鍵。ミスの修正待ち時間も含みます。英語の5文字＝1語換算のWPMではありません。最初の1秒は速度を表示しません。</p>
+    <p>IME実践の速度＝変換後の正しく一致した先頭文字数÷計測分数。一致率＝現在までの確定入力の正しい先頭文字数÷確定入力文字数。これは修正後の値で、打鍵正確率ではありません。変換中の未確定文字は採点しません。短時間で終了した場合は参考記録です。</p>
+    <p>グラフは累積平均速度。リズム値は正しい打鍵間隔のばらつきから計算する独自の参考値で、10標本未満は表示しません。ヒントあり・中断・正確率95%未満・15秒未満・10文字未満は自己ベスト／目標ペースから除外。入力方法・モード・秒数・段階の一致する記録だけを比べます。</p>
+    <p>高速化モードは同じ設定でも文章が変わります。より条件を揃えて比べるには、固定文の定点測定を使ってください。ただし固定文も繰り返せば慣れるため、初見の能力を証明しません。別の文や実際の仕事での入力も確かめてください。予測変換・マクロを完全に検出する仕組みではなく、個人練習用です。</p>
+  </div></details>
+  <details id="lab-evidence"><summary>研究をどう取り入れたか — 根拠と限界</summary><div>
+    <p>新月配列で「世界最速の習得」「医学的に最適」と実証された訓練法は確認できませんでした。このツール自体の学習効果も未検証です。以下の研究を設計の参考にし、出題比率・95%基準・休憩20秒・復習間隔は製品上の仮説として設定しています。</p>
+    <ul>
+      <li><a href="https://pubmed.ncbi.nlm.nih.gov/17924799/" target="_blank" rel="noopener noreferrer">Keith & Ericsson, 2007</a>：日常のタイピング経験と、向上を意図した練習を区別する研究。弱点を特定し、狙って練習する設計の参考です。新月配列での因果的な効果を保証しません。</li>
+      <li><a href="https://userinterfaces.aalto.fi/136Mkeystrokes/" target="_blank" rel="noopener noreferrer">Dhakal et al., CHI 2018</a>：大規模な打鍵データの観察研究。誤打と2打鍵の分析を参考にしています。相関から特定の打ち方の優位性は断定しません。</li>
+      <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8259719/" target="_blank" rel="noopener noreferrer">Buch et al., 2021</a>：短い練習と休息を挟む運動系列課題。ただし<a href="https://pubmed.ncbi.nlm.nih.gov/41150724/" target="_blank" rel="noopener noreferrer">2025年の反証研究</a>もあり、休憩直後の速さを長期学習の証拠とは扱いません。「10秒休めば最速」等は主張しません。</li>
+      <li><a href="https://www.osha.gov/etools/computer-workstations/components/keyboards" target="_blank" rel="noopener noreferrer">OSHAのキーボード作業指針</a>：手首を自然に保ち、肩の力を抜き、短い休止を入れる考え方。痛みやしびれが出たら中止し、続く場合は医療専門家に相談してください。医療・リハビリ用のツールではありません。</li>
+    </ul>
+  </div></details>
+  <details><summary>参考にしたサービス・ソースコード</summary><div>
+    <p><a href="https://www.keybr.com/">keybr</a>の段階学習と文字別評価、<a href="https://monkeytype.com/">Monkeytype</a>の集中しやすい時間制テストとミス・遅い連続入力の復習、<a href="https://o24.works/atc/">ATC tester</a>の変換後の実入力計測、<a href="https://www.e-typing.ne.jp/">e-typing</a>の意味を持つ題材、<a href="https://sushida.net/">寿司打</a>の短い挑戦と即時の結果を参考にしました。各サービスと同一の採点方式ではありません。</p>
+    <p>keybrのローカルフォーク（AGPL-3.0）とMonkeytype（GPL-3.0）の学習・入力・集計実装、ATCの公開クライアントスクリプトを調査。コード・問題文・画像は転載せず、新月配列の公式ローマ字テーブルから独立実装しています。e-typing／寿司打の非公開エンジンを解析・複製したものではありません。</p>
+    <p><a href="https://github.com/nagamine-git/shingetsu-layout-site/blob/main/TRAINING.md">実装・計測定義・調査記録を読む ↗</a></p>
+  </div></details>
+</section>
+
+<script>
+  import "../lib/trainingClient";
+</script>

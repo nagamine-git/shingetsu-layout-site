@@ -1,0 +1,24 @@
+---
+import Base from "../layouts/Base.astro";
+import TrainingLab from "../components/TrainingLab.astro";
+const description = "意味のある日本語で、新月配列を指に馴染ませる。適応レッスン、苦手の間隔復習、30・60・120秒の高速化、定点測定、IME実践をひとつに。無料・登録不要。";
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "新月タイピング — 新月配列の練習室",
+  description,
+  url: "https://shingetsu-layout.com/practice",
+  applicationCategory: "EducationalApplication",
+  operatingSystem: "Web browser",
+  inLanguage: "ja",
+  isAccessibleForFree: true,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" },
+};
+---
+<Base title="新月タイピング | 習得から高速化まで、新月配列の練習室" description={description}>
+  <script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
+  <div class="training-page page-width">
+    <header class="lab-heading"><div><p class="lab-eyebrow">SHINGETSU TYPING / PRACTICE LAB</p><h1>ことばが、指に馴染む。</h1><p>覚える。思い出す。速くなる。あなたのための、新月タイピング。</p></div><a href="#lab-evidence" class="lab-evidence-link">研究に学び、実践で確かめる <span aria-hidden="true">↗</span></a></header>
+    <TrainingLab />
+  </div>
+</Base>

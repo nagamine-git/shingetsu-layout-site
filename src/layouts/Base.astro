@@ -90,7 +90,7 @@ const websiteJsonLd = {
         <div class="site-nav-links">
           <a href="/#features" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">特徴</a>
           <a href="/#get-started" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">導入方法</a>
-          <a href="/#practice" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">練習室</a>
+          <a href="/practice" aria-current={Astro.url.pathname.startsWith('/practice') ? 'page' : undefined} class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">練習室</a>
           <a href="/blog" aria-current={Astro.url.pathname.startsWith('/blog') ? 'page' : undefined} class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">ブログ</a>
           <a href="/contact" aria-current={Astro.url.pathname.startsWith('/contact') ? 'page' : undefined} class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">お問い合わせ</a>
         </div>
