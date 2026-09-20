@@ -1,8 +1,10 @@
 import romanData from "../data/romantable.json";
 import { benchmarkCorpus, curriculum, trainingCorpus, type Passage } from "../data/trainingCorpus";
+import { trainingParagraphs } from "../data/trainingParagraphs";
 
 export type TrainingMode = "learn" | "review" | "speed" | "benchmark" | "ime" | "focus";
 export type TrainingMethod = "keyboard" | "touch" | "ime";
+export type TrainingMaterial = "short" | "paragraph";
 export interface TrainingToken { text: string; paths: string[]; }
 export interface Skill {
   samples: number;
@@ -17,6 +19,7 @@ export interface TrainingResult {
   date: string;
   mode: TrainingMode;
   method: TrainingMethod;
+  material: TrainingMaterial;
   duration: number;
   stage: number;
   cpm: number;
@@ -130,10 +133,11 @@ export function readProfile(raw: string | null): TrainingProfile {
         if (!number(entry.cpm, 100_000) || !number(entry.accuracy, 100) || !number(entry.duration, 7200) || !number(entry.stage, 5)) continue;
         if (!number(entry.kana, 100_000) || !number(entry.attempts, 1e7) || !number(entry.errors, entry.attempts)) continue;
         if (typeof entry.interrupted !== "boolean" || typeof entry.assisted !== "boolean" || typeof entry.signature !== "string" || entry.signature.length > 100) continue;
-        profile.results.push({ date: entry.date, mode: entry.mode as TrainingMode, method: entry.method as TrainingMethod, duration: entry.duration, stage: entry.stage, cpm: entry.cpm, accuracy: entry.accuracy, kana: entry.kana, attempts: entry.attempts, errors: entry.errors, interrupted: entry.interrupted, assisted: entry.assisted, signature: entry.signature });
+        if (entry.material !== undefined && entry.material !== "short" && entry.material !== "paragraph") continue;
+        profile.results.push({ date: entry.date, mode: entry.mode as TrainingMode, method: entry.method as TrainingMethod, material: entry.material ?? "short", duration: entry.duration, stage: entry.stage, cpm: entry.cpm, accuracy: entry.accuracy, kana: entry.kana, attempts: entry.attempts, errors: entry.errors, interrupted: entry.interrupted, assisted: entry.assisted, signature: entry.signature });
       }
     }
-    if (Array.isArray(parsed.recent)) profile.recent = parsed.recent.filter((value): value is string => typeof value === "string" && trainingCorpus.some((passage): boolean => passage.id === value)).slice(-30);
+    if (Array.isArray(parsed.recent)) profile.recent = parsed.recent.filter((value): value is string => typeof value === "string" && (trainingCorpus.some((passage): boolean => passage.id === value) || trainingParagraphs.some((passage): boolean => passage.id === value))).slice(-30);
   } catch { return profile; }
   return profile;
 }
@@ -164,14 +168,15 @@ export function priority(skill: Skill | undefined, now: number): number {
   return 1 + (1 - accuracy) * 6 + Math.min(3, median(skill.latencies) / 1200) + (skill.due <= now ? 3 : 0);
 }
 
-export function selectPassages(profile: TrainingProfile, method: "keyboard" | "touch", mode: TrainingMode, stage: number, now: number, random: () => number = Math.random, focus = ""): Passage[] {
+export function selectPassages(profile: TrainingProfile, method: "keyboard" | "touch", mode: TrainingMode, stage: number, now: number, random: () => number = Math.random, focus = "", material: TrainingMaterial = "short"): Passage[] {
   if (mode === "benchmark" || mode === "ime") return [...benchmarkCorpus];
   const stats = profile[method];
   const continuous = mode === "speed" || mode === "focus";
-  const pool = trainingCorpus.filter((passage): boolean => (continuous ? passage.stage >= 2 : passage.stage <= stage));
+  const paragraphs = continuous && material === "paragraph";
+  const pool = paragraphs ? trainingParagraphs : trainingCorpus.filter((passage): boolean => (continuous ? passage.stage >= 2 : passage.stage <= stage));
   const selected: Passage[] = [];
   let size = 0;
-  const maxChars = continuous ? 500 : stage < 2 ? 36 : 75;
+  const maxChars = paragraphs ? 900 : continuous ? 500 : stage < 2 ? 36 : 75;
   while (size < maxChars && selected.length < (continuous ? 30 : 14)) {
     const choices = pool.filter((passage): boolean => !selected.some((item): boolean => item.id === passage.id));
     if (!choices.length) break;
