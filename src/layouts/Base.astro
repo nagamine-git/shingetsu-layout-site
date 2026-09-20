@@ -95,26 +95,28 @@ const websiteJsonLd = {
     <!-- Page-specific head content (JSON-LD etc.) -->
     <slot name="head" />
   </head>
-  <body class="overflow-x-hidden">
-    <header class="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[var(--color-surface)]/80 border-b border-white/10">
-      <nav class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-        <a href="/" class="font-bold text-base sm:text-lg tracking-tight text-white shrink-0">
-          新月配列
+  <body>
+    <a href="#main-content" class="skip-link">本文へ移動</a>
+    <header class="site-header">
+      <nav class="site-nav page-width" aria-label="メインナビゲーション">
+        <a href="/" class="site-brand" aria-label="新月配列 ホーム">
+          <span class="brand-moon" aria-hidden="true"></span>
+          <span>新月配列<span class="brand-caption" aria-hidden="true">SHINGETSU LAYOUT</span></span>
         </a>
-        <div class="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm overflow-x-auto">
+        <div class="site-nav-links">
           <a href="/#features" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">特徴</a>
           <a href="/#get-started" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">導入方法</a>
           <a href="/blog" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">ブログ</a>
-          <a href="/contact" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap hidden sm:inline">お問い合わせ</a>
+          <a href="/contact" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">お問い合わせ</a>
         </div>
       </nav>
     </header>
 
-    <main>
+    <main id="main-content" tabindex="-1">
       <slot />
     </main>
 
-    <footer class="border-t border-white/10 mt-24 py-8 text-center text-sm text-slate-500">
+    <footer class="site-footer border-t border-white/10 mt-24 py-8 text-center text-sm text-slate-500">
       <div class="max-w-5xl mx-auto px-4">
         <p>
           &copy; 2026 新月配列 &mdash;
@@ -148,6 +150,26 @@ const websiteJsonLd = {
         if (!name) return;
         window.track(name, el.dataset.trackLoc ? { location: el.dataset.trackLoc } : {});
       });
+
+      const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries): void => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            if (!motionPreference.matches && entry.target instanceof HTMLElement) {
+              entry.target.animate?.(
+                [{ opacity: 0.65, transform: "translateY(20px)" }, { opacity: 1, transform: "translateY(0)" }],
+                { duration: 700, easing: "cubic-bezier(.22,1,.36,1)" },
+              );
+            }
+            observer.unobserve(entry.target);
+          }
+        }, { threshold: 0.12 });
+        document.querySelectorAll("[data-reveal]").forEach((element): void => observer.observe(element));
+        motionPreference.addEventListener("change", (): void => {
+          if (motionPreference.matches) document.getAnimations?.().forEach((animation): void => animation.cancel());
+        });
+      }
     </script>
   </body>
 </html>

@@ -1,0 +1,18 @@
+<div class="eclipse" aria-hidden="true">
+  <div class="eclipse-halo"></div>
+  <div class="eclipse-orbit eclipse-orbit-outer"></div>
+  <div class="eclipse-orbit eclipse-orbit-inner"></div>
+  <div class="eclipse-disc">
+    <svg class="eclipse-grain" viewBox="0 0 600 600" focusable="false">
+      <filter id="lunar-grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency=".68" numOctaves="3" stitchTiles="stitch" />
+        <feColorMatrix type="saturate" values="0" />
+      </filter>
+      <circle cx="300" cy="300" r="298" fill="#8b8379" filter="url(#lunar-grain)" />
+    </svg>
+  </div>
+  <div class="eclipse-corona"></div>
+  <span class="eclipse-point eclipse-point-first"></span>
+  <span class="eclipse-point eclipse-point-second"></span>
+  <span class="eclipse-axis"></span>
+</div>
