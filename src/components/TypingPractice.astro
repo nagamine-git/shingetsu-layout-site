@@ -1,0 +1,73 @@
+---
+import layout from "../data/layout.json";
+import { practiceModes } from "../lib/practice";
+---
+
+<section id="practice" class="content-section practice-section">
+  <div class="page-width">
+    <div class="section-heading" data-reveal>
+      <p class="section-index" aria-hidden="true">PRACTICE / 自分の指に、馴染ませる。</p>
+      <h2>新月の練習室</h2>
+      <p>眺めるだけでなく、20文字ずつ、自分のものに。インストール不要の打鍵順トレーニング。</p>
+    </div>
+    <noscript><p>練習には JavaScript が必要です。配列図と導入手順はそのままご覧いただけます。</p></noscript>
+    <div id="practice-app" class="practice-layout" hidden>
+      <aside class="practice-sidebar" aria-label="練習設定と記録">
+        <label for="practice-mode" class="practice-label">LESSON / 練習内容</label>
+        <select id="practice-mode">{practiceModes.map((mode) => <option value={mode.id}>{mode.label}</option>)}</select>
+        <p id="practice-description">{practiceModes[0].description}</p>
+        <fieldset class="practice-method">
+          <legend>入力方法（記録は別々に保存）</legend>
+          <label><input type="radio" name="practice-method" value="keyboard" checked /> PCキーボード</label>
+          <label><input type="radio" name="practice-method" value="touch" /> 画面タップ</label>
+        </fieldset>
+        <details class="practice-record">
+          <summary>この端末の記録・保存について</summary>
+          <p id="practice-history">まだ記録はありません。</p>
+          <p id="practice-weak">20文字を完了すると、復習候補が見つかります。</p>
+          <button type="button" id="practice-delete" class="button-text">記録を削除</button>
+          <p id="practice-storage" class="practice-privacy">成績はこのブラウザだけに保存。アカウント不要。他の端末とは同期しません。</p>
+        </details>
+      </aside>
+      <div class="practice-console">
+        <div class="practice-topline"><span id="practice-counter">00 / 20</span><span id="practice-status" role="status">準備ができたら、練習を開始。</span></div>
+        <progress id="practice-progress" max="20" value="0" aria-label="20文字の練習進捗"></progress>
+        <div id="practice-stage" tabindex="0" role="group" aria-label="新月配列の練習入力エリア" aria-describedby="practice-help">
+          <div class="practice-target"><span class="practice-label">NEXT / 次のかな</span><span id="practice-current">は</span></div>
+          <div id="practice-guide" class="practice-guide" aria-label="入力するキーの順番"></div>
+          <p id="practice-help">PCはIMEをオフにして英数入力に。表示の順にキーを押してください。</p>
+          <div id="practice-prompt" class="practice-prompt" aria-label="今回の20文字"></div>
+        </div>
+        <div class="practice-keyboard" aria-label="タップで使える練習キーボード">
+          {layout.layers[0].keys.map((row, rowIndex) => (
+            <div class="practice-key-row" data-row={rowIndex}>
+              {row.map((key, columnIndex) => (
+                <button type="button" class="practice-key" data-key={key} aria-label={`${key.toUpperCase()} キー`}>
+                  <span>{key.toUpperCase()}</span><span>{layout.layers[1].keys[rowIndex][columnIndex]}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div class="practice-metrics" aria-label="現在の成績">
+          <div><span id="practice-accuracy">—</span><small>打鍵正確率</small></div>
+          <div><span id="practice-speed">—</span><small>かな / 分</small></div>
+          <div><span id="practice-errors">0</span><small>ミス打鍵</small></div>
+        </div>
+        <p class="practice-metric-note">正確率＝正しい打鍵 ÷ 全打鍵。速度＝完了かな数 ÷ 入力中の分数。別の場所へ移動すると計時を停止。タップはPCの入力速度とは比較しません。</p>
+        <div id="practice-result" class="practice-result" tabindex="-1" hidden>
+          <h3>20文字、完了。</h3><p id="practice-summary"></p>
+        </div>
+        <div class="practice-actions">
+          <button type="button" id="practice-start" class="button-primary">練習を開始 <span aria-hidden="true">↗</span></button>
+          <button type="button" id="practice-restart" class="button-text" hidden>やり直す</button>
+        </div>
+        <p class="practice-metric-note">誤ったキーでは先に進みません。Spaceでの確定は不要です。実際のIMEではなく、サイトの配列表に沿ってキーの順番を覚える練習です。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import "../lib/practiceClient";
+</script>
