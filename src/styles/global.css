@@ -170,6 +170,7 @@
   .lab-controls > select { grid-column: 1; grid-row: 2; margin: 0; }
   #lab-stage-control, #lab-duration-control { grid-column: 2; grid-row: 1 / 3; }
   #lab-hints-control { grid-column: 1 / -1; grid-template-columns: 80px 1fr; align-items: center; }
+  #lab-material-control { grid-column: 1 / -1; }
   #lab-hints-control select { margin: 0; }
   .lab-controls select { font-size: 12px; }
   .lab-daily { margin-top: 16px; padding-top: 14px; }
@@ -264,6 +265,12 @@ body[data-training-focus="true"] .training-page { max-width: 960px; padding-top:
 .lab-focus-result .button-primary { border-radius: 6px; margin-bottom: 20px; font-size: 13px; }
 .lab-focus-result kbd { margin-left: 24px; font: 400 11px var(--font-sans); }
 .lab-focus-result .lab-muted { margin-top: 8px; }
+
+.training-lab[data-material="paragraph"] .lab-stage { display: block; min-height: 0; padding: 22px 0 18px; }
+.training-lab[data-material="paragraph"] .lab-passage-label { display: flex; }
+.training-lab[data-material="paragraph"] .lab-meaning { font-size: clamp(14px, 1.6vw, 17px); line-height: 1.9; letter-spacing: .025em; margin: 16px 0 22px; }
+.training-lab[data-material="paragraph"] .lab-prompt { position: relative; font-size: clamp(22px, 2.5vw, 30px); line-height: 1.9; letter-spacing: .04em; max-height: 5.7em; overflow-y: auto; overscroll-behavior: contain; overflow-anchor: none; scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: #b6d6c65c transparent; padding-bottom: 8px; }
+.training-lab[data-material="paragraph"] .lab-prompt:focus-visible { outline: 1px solid var(--lab-green); outline-offset: 4px; }
 
 @font-face {
   font-family: "Noto Sans JP";

@@ -1,6 +1,7 @@
 ---
 import layout from "../data/layout.json";
 import { curriculum, trainingCorpus } from "../data/trainingCorpus";
+import { trainingParagraphs } from "../data/trainingParagraphs";
 const modes = [
   { id: "learn", number: "01", title: "習得", sub: "ことばで覚える" },
   { id: "review", number: "02", title: "復習", sub: "苦手を、得意に" },
@@ -32,6 +33,7 @@ const modes = [
         <select id="lab-method"><option value="keyboard">PCキーボード</option><option value="touch">画面タップ · 配置を覚える</option></select>
         <div id="lab-stage-control"><label for="lab-level">練習する段階</label><select id="lab-level"><option value="auto">自動 · 記録から選ぶ</option>{curriculum.map((stage, index) => <option value={index}>{index + 1}. {stage.name}</option>)}</select></div>
         <div id="lab-duration-control" hidden><label for="lab-duration">テスト時間</label><select id="lab-duration"><option value="30">30秒 · 短く集中</option><option value="60" selected>60秒 · 標準</option><option value="120">120秒 · 持続力</option></select></div>
+        <div id="lab-material-control" hidden><label for="lab-material">練習する文章</label><select id="lab-material"><option value="short">語句・短文</option><option value="paragraph">まとまった文章 · 4文でひとつの話</option></select></div>
         <div id="lab-hints-control"><label for="lab-hints">打鍵ガイド</label><select id="lab-hints"><option value="auto">自動 · 覚えたら隠す</option><option value="on">常に表示</option><option value="off">表示しない</option></select></div>
       </div>
       <div class="lab-daily">
@@ -119,6 +121,7 @@ const modes = [
     <article><span>03 / ACCELERATE</span><h3>速さを、分解する。</h3><p>30・60・120秒で自然な文を連続入力。ミスした文字と遅い2打鍵を分析し、その組み合わせを含む別の文章へ戻ります。定点測定は学習用とは別の固定文・60秒・ヒントなしです。</p></article>
   </div>
   <details open><summary>最初に：PC・スマートフォン・導入済みIMEの使い分け</summary><div>
+    <p><strong>まとまった文章：</strong>集中・高速化モードの設定にある「練習する文章」から選べます。仕事の連絡や日々の風景など、4文でひとつの話になる書き下ろし{trainingParagraphs.length}本を収録。原文全体を読みながら、かなの入力位置に合わせて表示欄が追従します。文章の途中でも時間が来たら終了し、それまでに打ち終えたかなを採点。短文とは自己ベストを分けます。<a href="/practice/?mode=focus&amp;material=paragraph">まとまった文章で集中する →</a></p>
     <p><strong>習得・復習・高速化・定点測定・集中：</strong>配列のインストール不要。PCはIMEをオフ、OSのキー変換もオフの英数QWERTY状態にしてください。物理キーの位置を採点します。D/Kは前置シフトなので、同時押しではなく順に押します。濁点はL、半濁点はLを2回。正しい別打鍵経路も受け付けます。誤打では進まないため、Backspaceでの修正は不要です。</p>
     <p><strong>集中：</strong>課題文と小さな残り時間を中心にしたシンプルな画面。初期設定は60秒、設定から30・60・120秒を選べます。最初の打鍵で計測が始まり、時間になると速度・正確率・次の改善点を表示して保存。結果画面でEnter、または「もう一度」のタップで同じ条件の新しい課題へ進みます。Escは練習中でも結果画面でも、同じ課題を最初から即リトライ。入力と残り時間をリセットし、次の打鍵から計測します。途中の記録は中断扱いで保存し、自己ベストに含めません。「中断する」・画面の切り替え・モード選択では再開せず終了します。自動再開や休憩の強制はしません。ガイドは初期状態で非表示、必要ならヒントを使えます。「モード選択」で履歴や詳しい使い方に戻れます。</p>
     <p><strong>IME実践：</strong><a href="/#get-started">新月配列を導入</a>した環境で日本語IMEをオンにし、表示の漢字・句読点まで入力します。他の配列でも動くため、配列の自動判定や本人確認はしていません。変換後の文字/分で測り、かな/分とは比較しません。</p>
@@ -128,7 +131,7 @@ const modes = [
   <details><summary>数字の読み方と、公平な比較</summary><div>
     <p>シミュレーターの速度＝完了したかな・句読点数÷計測分数。拗音は「きゃ」で2文字。正確率＝正しい打鍵÷全採点打鍵。ミスの修正待ち時間も含みます。英語の5文字＝1語換算のWPMではありません。最初の1秒は速度を表示しません。</p>
     <p>IME実践の速度＝変換後の正しく一致した先頭文字数÷計測分数。一致率＝現在までの確定入力の正しい先頭文字数÷確定入力文字数。これは修正後の値で、打鍵正確率ではありません。変換中の未確定文字は採点しません。短時間で終了した場合は参考記録です。</p>
-    <p>グラフは累積平均速度。リズム値は正しい打鍵間隔のばらつきから計算する独自の参考値で、10標本未満は表示しません。ヒントあり・中断・正確率95%未満・15秒未満・10文字未満は自己ベスト／目標ペースから除外。入力方法・モード・秒数・段階の一致する記録だけを比べます。</p>
+    <p>グラフは累積平均速度。リズム値は正しい打鍵間隔のばらつきから計算する独自の参考値で、10標本未満は表示しません。ヒントあり・中断・正確率95%未満・15秒未満・10文字未満は自己ベスト／目標ペースから除外。入力方法・モード・秒数・段階・文章の種類の一致する記録だけを比べます。</p>
     <p>高速化モードは同じ設定でも文章が変わります。より条件を揃えて比べるには、固定文の定点測定を使ってください。ただし固定文も繰り返せば慣れるため、初見の能力を証明しません。別の文や実際の仕事での入力も確かめてください。予測変換・マクロを完全に検出する仕組みではなく、個人練習用です。</p>
   </div></details>
   <details id="lab-evidence"><summary>研究をどう取り入れたか — 根拠と限界</summary><div>

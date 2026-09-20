@@ -1,5 +1,5 @@
 import { benchmarkCorpus, curriculum, type Passage } from "../data/trainingCorpus";
-import { codeToKey, comparableResults, fingerHint, freshProfile, keyLegend, mastery, median, priority, readProfile, rhythm, saveSession, selectPassages, suggestedStage, trainingStorageKey, TrainingRun, type TrainingMethod, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
+import { codeToKey, comparableResults, fingerHint, freshProfile, keyLegend, mastery, median, priority, readProfile, rhythm, saveSession, selectPassages, suggestedStage, trainingStorageKey, TrainingRun, type TrainingMaterial, type TrainingMethod, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
 
 function element<ElementType extends HTMLElement = HTMLElement>(id: string): ElementType {
   const found = document.getElementById(id);
@@ -15,6 +15,7 @@ const methodSelect = element<HTMLSelectElement>("lab-method");
 const levelSelect = element<HTMLSelectElement>("lab-level");
 const durationSelect = element<HTMLSelectElement>("lab-duration");
 const hintsSelect = element<HTMLSelectElement>("lab-hints");
+const materialSelect = element<HTMLSelectElement>("lab-material");
 const imeInput = element<HTMLTextAreaElement>("lab-ime-input");
 const keys = [...app.querySelectorAll<HTMLButtonElement>(".lab-key")];
 const modeButtons = [...app.querySelectorAll<HTMLButtonElement>("[data-mode]")];
@@ -44,13 +45,15 @@ let lastHintRender = "";
 
 methodSelect.value = matchMedia("(pointer: coarse)").matches ? "touch" : "keyboard";
 if (mode === "focus") hintsSelect.value = "off";
+if (new URLSearchParams(location.search).get("material") === "paragraph") materialSelect.value = "paragraph";
 
 function method(): "keyboard" | "touch" { return methodSelect.value === "touch" ? "touch" : "keyboard"; }
 function effectiveMethod(): TrainingMethod { return mode === "ime" ? "ime" : method(); }
 function timed(): boolean { return mode === "speed" || mode === "benchmark" || mode === "ime" || mode === "focus"; }
 function duration(): number { return mode === "speed" || mode === "focus" ? Number(durationSelect.value) : timed() ? 60 : 0; }
 function level(): number { return timed() ? 5 : levelSelect.value === "auto" ? suggestedStage(profile[method()]) : Number(levelSelect.value); }
-function signature(): string { return `${mode}:${effectiveMethod()}:${duration()}:${level()}:v1`; }
+function material(): TrainingMaterial { return (mode === "focus" || mode === "speed") && materialSelect.value === "paragraph" ? "paragraph" : "short"; }
+function signature(): string { return `${mode}:${effectiveMethod()}:${duration()}:${level()}:${material() === "paragraph" ? "paragraph:" : ""}v1`; }
 function status(message: string, quiet = false): void {
   element("lab-status").textContent = message;
   app.dataset.quietStatus = String(quiet);
@@ -66,7 +69,7 @@ function persist(): void {
 }
 
 function lockSettings(locked: boolean): void {
-  for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, ...modeButtons]) control.disabled = locked;
+  for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect, ...modeButtons]) control.disabled = locked;
   element<HTMLButtonElement>("lab-reset").disabled = locked;
   element<HTMLInputElement>("lab-import").disabled = locked;
   element<HTMLButtonElement>("lab-target-review").disabled = locked;
@@ -102,7 +105,7 @@ function renderHistory(): void {
   for (const result of results.slice(-8).reverse()) {
     const row = document.createElement("tr");
     const conditions = [result.interrupted ? "中断" : "完了", result.assisted ? "ガイドあり" : "ガイドなし", `${Math.round(result.duration)}秒`];
-    for (const text of [new Date(result.date).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }), `${names[result.mode]} / ${methodNames[result.method]}`, `${Math.round(result.cpm)} ${result.method === "ime" ? "字" : "かな"}/分`, `${result.accuracy.toFixed(1)}%`, conditions.join(" · ")]) {
+    for (const text of [new Date(result.date).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }), `${names[result.mode]}${result.material === "paragraph" ? " / 文章" : ""} / ${methodNames[result.method]}`, `${Math.round(result.cpm)} ${result.method === "ime" ? "字" : "かな"}/分`, `${result.accuracy.toFixed(1)}%`, conditions.join(" · ")]) {
       const cell = document.createElement("td");
       cell.textContent = text;
       row.append(cell);
@@ -185,13 +188,27 @@ function renderHint(): void {
   }
 }
 
+function keepPromptCursorVisible(): void {
+  if (material() !== "paragraph") return;
+  const prompt = element("lab-prompt");
+  const current = prompt.querySelector<HTMLElement>('[aria-current="true"]');
+  if (!current || prompt.clientHeight === 0) return;
+  const viewport = prompt.getBoundingClientRect();
+  const cursor = current.getBoundingClientRect();
+  if (cursor.top < viewport.top + 4 || cursor.bottom > viewport.bottom - 4) {
+    prompt.scrollTo({ top: prompt.scrollTop + cursor.top - viewport.top - prompt.clientHeight / 3, behavior: "instant" });
+  }
+}
+
 function renderPrompt(): void {
   if (run.complete) return;
   element("lab-meaning").textContent = run.passage.text;
   element("lab-topic").textContent = run.passage.topic;
-  element("lab-counter").textContent = timed() ? `第${run.passageIndex + 1}文` : `${run.passageIndex + 1} / ${run.passages.length}`;
-  element("lab-next").textContent = run.passages[run.passageIndex + 1] ? `NEXT  ${run.passages[run.passageIndex + 1].text}` : "この文で、ひと区切り。";
+  element("lab-counter").textContent = timed() ? `第${run.passageIndex + 1}${material() === "paragraph" ? "話" : "文"}` : `${run.passageIndex + 1} / ${run.passages.length}`;
+  const nextPassage = run.passages[run.passageIndex + 1];
+  element("lab-next").textContent = nextPassage ? `NEXT  ${material() === "paragraph" ? nextPassage.topic : nextPassage.text}` : "この文で、ひと区切り。";
   const prompt = element("lab-prompt");
+  const scrollTop = prompt.scrollTop;
   prompt.replaceChildren();
   if (mode === "ime") {
     prompt.textContent = run.passage.reading;
@@ -206,6 +223,8 @@ function renderPrompt(): void {
       prompt.append(span);
     }
   }
+  prompt.scrollTo({ top: scrollTop, behavior: "instant" });
+  keepPromptCursorVisible();
   renderHint();
 }
 
@@ -222,7 +241,7 @@ function renderMetrics(): void {
   renderDaily();
 }
 
-function passages(): Passage[] { return selectPassages(profile, method(), mode, level(), Date.now(), Math.random, focus); }
+function passages(): Passage[] { return selectPassages(profile, method(), mode, level(), Date.now(), Math.random, focus, material()); }
 
 function prepare(retryPassages?: Passage[]): void {
   clearInterval(timer);
@@ -241,6 +260,15 @@ function prepare(retryPassages?: Passage[]): void {
   app.dataset.state = state;
   app.dataset.mode = mode;
   app.dataset.method = effectiveMethod();
+  app.dataset.material = material();
+  const prompt = element("lab-prompt");
+  if (material() === "paragraph") {
+    prompt.tabIndex = 0;
+    prompt.setAttribute("role", "group");
+  } else {
+    prompt.removeAttribute("tabindex");
+    prompt.removeAttribute("role");
+  }
   document.body.dataset.trainingFocus = String(mode === "focus");
   element("lab-focus-toolbar").hidden = mode !== "focus";
   element("lab-focus-result").hidden = mode !== "focus";
@@ -251,6 +279,7 @@ function prepare(retryPassages?: Passage[]): void {
   hintsSelect.disabled = mode === "benchmark";
   element("lab-stage-control").hidden = timed();
   element("lab-duration-control").hidden = mode !== "speed" && mode !== "focus";
+  element("lab-material-control").hidden = mode !== "speed" && mode !== "focus";
   element("lab-hints-control").hidden = mode === "ime" || mode === "benchmark";
   element("lab-ime-area").hidden = mode !== "ime";
   element("lab-keyboard").hidden = mode === "ime";
@@ -428,10 +457,10 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
   hintsSelect.disabled = mode === "benchmark";
   const seconds = run.elapsed(now) / 1000;
   if (!run.started || seconds < .001) { prepare(); status("入力前に終了しました。記録は保存していません。"); return; }
-  const result: TrainingResult = { date: new Date().toISOString(), mode, method: effectiveMethod(), duration: seconds, stage: level(), cpm: run.cpm(now), accuracy: mode === "ime" ? (imeTotal ? imeCorrect / imeTotal * 100 : 0) : run.accuracy, kana: run.completed, attempts: mode === "ime" ? imeTotal : run.attempts, errors: mode === "ime" ? imeTotal - imeCorrect : run.errors, interrupted: run.interrupted, assisted: run.assisted, signature: signature() };
+  const result: TrainingResult = { date: new Date().toISOString(), mode, method: effectiveMethod(), material: material(), duration: seconds, stage: level(), cpm: run.cpm(now), accuracy: mode === "ime" ? (imeTotal ? imeCorrect / imeTotal * 100 : 0) : run.accuracy, kana: run.completed, attempts: mode === "ime" ? imeTotal : run.attempts, errors: mode === "ime" ? imeTotal - imeCorrect : run.errors, interrupted: run.interrupted, assisted: run.assisted, signature: signature() };
   const previous = comparableResults(profile, result.signature);
   const previousBest = Math.max(0, ...previous.map((entry): number => entry.cpm));
-  saveSession(profile, result, run.assessmentSamples, run.pairs, run.passages.slice(0, run.passageIndex).map((passage): string => passage.id));
+  saveSession(profile, result, run.assessmentSamples, run.pairs, run.passages.slice(0, run.passageIndex + (material() === "paragraph" ? 1 : 0)).map((passage): string => passage.id));
   persist();
   if (!showResult) return;
   const comparable = comparableResults(profile, result.signature).includes(result);
@@ -443,7 +472,7 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
   renderAnalysis();
   element("lab-focus-cpm").textContent = String(Math.round(result.cpm));
   element("lab-focus-accuracy").textContent = `${result.accuracy.toFixed(1)}%`;
-  element("lab-focus-summary").textContent = `${result.kana}文字 · ${Math.round(seconds)}秒 · ${methodNames[result.method]}${result.method === "touch" ? "（PC速度とは比較しません）" : ""}`;
+  element("lab-focus-summary").textContent = `${result.kana}文字 · ${Math.round(seconds)}秒${result.material === "paragraph" ? " · 文章" : ""} · ${methodNames[result.method]}${result.method === "touch" ? "（PC速度とは比較しません）" : ""}`;
   element("lab-focus-tip").textContent = `${element("lab-advice-title").textContent}${nextFocus ? ` 次は「${/[a-z;]/.test(nextFocus) ? Array.from(nextFocus).join(" → ").toUpperCase() : nextFocus}」を意識して。` : ""}`;
   element("lab-focus-storage").textContent = storageAvailable ? "この端末に保存しました。履歴は「モード選択」から。" : "この環境では記録を保存できません。「モード選択」から記録を書き出してください。";
   drawChart();
@@ -575,7 +604,7 @@ for (const button of modeButtons) button.addEventListener("click", (): void => {
   prepare();
   if (mode === "focus") { startButton.focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: "instant" }); }
 });
-for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect]) control.addEventListener("change", (): void => { focus = ""; prepare(); });
+for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect]) control.addEventListener("change", (): void => { focus = ""; prepare(); });
 element("lab-target-review").addEventListener("click", (): void => {
   const previousLevel = level();
   mode = "review";
@@ -588,7 +617,7 @@ element("lab-target-review").addEventListener("click", (): void => {
 });
 
 stage.addEventListener("keydown", (event): void => {
-  if (event.target !== stage || state !== "running" || mode === "ime" || method() !== "keyboard" || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+  if ((event.target !== stage && !(material() === "paragraph" && event.target === element("lab-prompt"))) || state !== "running" || mode === "ime" || method() !== "keyboard" || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
   if (event.key === "Escape") {
     if (mode !== "focus") { event.preventDefault(); pause(); }
     return;
@@ -626,12 +655,14 @@ for (const type of ["paste", "drop"] as const) imeInput.addEventListener(type, (
 imeInput.addEventListener("beforeinput", (event): void => {
   if (event.inputType === "insertFromPaste" || event.inputType === "insertFromDrop") { event.preventDefault(); status("貼り付けは計測対象外です。"); }
 });
-for (const input of [stage, imeInput]) input.addEventListener("blur", (event): void => {
+for (const input of [stage, imeInput, element("lab-prompt")]) input.addEventListener("blur", (event): void => {
   const next = event.relatedTarget;
+  if (material() === "paragraph" && (next === stage || next === element("lab-prompt"))) return;
   if (next instanceof Element && (next.closest(".lab-key") || ["lab-pause", "lab-abandon", "lab-show-hint", "lab-focus-exit"].includes(next.id))) return;
   if (state === "running") pause();
 });
 window.addEventListener("blur", (): void => { if (state === "running") pause(); });
+window.addEventListener("resize", keepPromptCursorVisible);
 document.addEventListener("visibilitychange", (): void => { if (document.hidden && state === "running") pause(); });
 
 element("lab-export").addEventListener("click", (): void => {
