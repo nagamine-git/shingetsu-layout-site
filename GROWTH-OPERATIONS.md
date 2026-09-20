@@ -32,6 +32,7 @@ Star 以外の枝は改善仮説であり、順番どおりの必須ファネル
 | サイト流入 | 同じ期間のセッション、流入元別 | GA実装済み、レポート取得は未接続 |
 | 検索表示・CTR | 検索クリック / 表示 | Search Console未接続。AI引用は別指標 |
 | デモ体験率 | `demo_interact` のあるセッション / デモ設置ページ閲覧セッション | GA、取得未接続。イベント回数を人数にしない |
+| 練習完了率 | `practice_complete` のあるセッション / `practice_start` のあるセッション | 同期間・同入力方法で重複排除。GA取得未接続。イベント回数比はセッション完了率とは別物 |
 | GitHub遷移率 | GitHub向けクリックのあるセッション / 対象ページ閲覧セッション | `github_click`、`github_star_cta_click`、`install_file_click` の和集合。重複排除 |
 | 導入意向 | `install_file_click`、`copy_install_cmd` のあるセッション | ファイル取得完了・導入成功ではない |
 | 利用成功 | 利用者が実環境で入力できた確認件数 | 現状未計測。cloneで代用しない |
