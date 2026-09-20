@@ -11,7 +11,6 @@ const extensions = layoutData.layers[2].keys;
 ---
 
 <section class="hero" aria-labelledby="hero-title">
-  <div class="hero-atmosphere" aria-hidden="true"></div>
   <div class="hero-main page-width">
     <div class="hero-copy">
       <p class="eyebrow"><span class="status-light" aria-hidden="true"></span>日本語 かな配列</p>
@@ -36,7 +35,6 @@ const extensions = layoutData.layers[2].keys;
     </div>
     <div class="hero-art">
       <Eclipse />
-      <p class="hero-art-signature" aria-hidden="true">SHINGETSU <span>新月</span></p>
       <button type="button" class="moon-replay" aria-pressed="false" hidden>月を動かす</button>
     </div>
   </div>
@@ -80,59 +78,68 @@ const extensions = layoutData.layers[2].keys;
 </section>
 
 <script>
-  const lunarSurface = document.querySelector<HTMLElement>(".eclipse");
   const lunarStage = document.querySelector<HTMLElement>(".hero-art");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const precisePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-  let lunarAnimation: Animation | undefined;
-  let pendingFrame = 0;
   const replayButton = document.querySelector<HTMLButtonElement>(".moon-replay");
   const phaseShadow = document.querySelector<SVGElement>(".eclipse-phase-shadow");
   const moonAnimations: Animation[] = [];
   let manualMotion = false;
   let userPaused = false;
   let moonVisible = false;
+  let ready = false;
+  let completed = false;
 
   function updateMoonMotion(): void {
     const permitted = !reducedMotion.matches || manualMotion;
-    const playing = permitted && !userPaused && moonVisible && !document.hidden;
-    if (!playing) lunarAnimation?.cancel();
-    for (const animation of moonAnimations) {
-      if (playing) animation.play();
-      else animation.pause();
+    const playing = ready && permitted && !userPaused && moonVisible && !document.hidden && !completed;
+    if (!completed) {
+      for (const animation of moonAnimations) {
+        if (playing) animation.play();
+        else animation.pause();
+      }
     }
     if (replayButton) {
-      replayButton.textContent = permitted && !userPaused ? "Ⅱ 動きを止める" : "▷ 月を動かす";
-      replayButton.setAttribute("aria-pressed", String(permitted && !userPaused));
+      replayButton.textContent = completed ? "↻ もう一度見る" : ready && permitted && !userPaused ? "Ⅱ 動きを止める" : "▷ 月を動かす";
+      replayButton.setAttribute("aria-pressed", String(ready && permitted && !userPaused && !completed));
     }
   }
 
   if (replayButton && phaseShadow && typeof phaseShadow.animate === "function") {
     const phase = phaseShadow.animate(
       [
-        { transform: "translateX(-100px)", offset: 0 },
-        { transform: "translateX(0)", offset: .42 },
-        { transform: "translateX(0)", offset: .58 },
-        { transform: "translateX(-100px)", offset: 1 },
+        { transform: "translateX(-100px)", offset: 0, easing: "cubic-bezier(.4,0,.2,1)" },
+        { transform: "translateX(0)", offset: .8, easing: "linear" },
+        { transform: "translateX(0)", offset: 1 },
       ],
-      { duration: 14000, iterations: Infinity, easing: "ease-in-out" },
+      { duration: 8000, fill: "forwards" },
     );
     phase.pause();
     phase.currentTime = 0;
     moonAnimations.push(phase);
-    const atmosphere = document.querySelector<HTMLElement>(".eclipse-atmosphere");
-    if (atmosphere) {
-      const light = atmosphere.animate(
-        [{ transform: "rotate(-25deg) scale(.96)", opacity: .45 }, { transform: "rotate(35deg) scale(1.04)", opacity: .8 }],
-        { duration: 7000, direction: "alternate", iterations: Infinity, easing: "ease-in-out" },
+    const halo = document.querySelector<HTMLElement>(".eclipse-halo");
+    if (halo) {
+      const light = halo.animate(
+        [{ opacity: 0, offset: 0 }, { opacity: 0, offset: .8, easing: "ease-out" }, { opacity: 1, offset: 1 }],
+        { duration: 8000, fill: "forwards" },
       );
       light.pause();
+      light.currentTime = 0;
       moonAnimations.push(light);
     }
+    phase.onfinish = (): void => {
+      completed = true;
+      updateMoonMotion();
+    };
     replayButton.hidden = false;
     replayButton.addEventListener("click", (): void => {
-      if ((!reducedMotion.matches || manualMotion) && !userPaused) userPaused = true;
+      if (completed) {
+        completed = false;
+        for (const animation of moonAnimations) animation.currentTime = 0;
+        manualMotion = true;
+        userPaused = false;
+      } else if (ready && (!reducedMotion.matches || manualMotion) && !userPaused) userPaused = true;
       else { manualMotion = true; userPaused = false; }
+      ready = true;
       updateMoonMotion();
     });
     if (lunarStage && "IntersectionObserver" in window) {
@@ -142,41 +149,14 @@ const extensions = layoutData.layers[2].keys;
       }, { threshold: .15 }).observe(lunarStage);
     } else { moonVisible = true; }
     document.addEventListener("visibilitychange", updateMoonMotion);
+    const scheduleStart = (): void => {
+      setTimeout((): void => { ready = true; updateMoonMotion(); }, 1200);
+    };
+    if (document.readyState === "complete") scheduleStart();
+    else window.addEventListener("load", scheduleStart, { once: true });
     updateMoonMotion();
   }
-
-  function moveMoon(horizontal: number, vertical: number): void {
-    if (!lunarSurface || reducedMotion.matches || userPaused || !precisePointer.matches) return;
-    const currentTransform = getComputedStyle(lunarSurface).transform;
-    lunarAnimation?.cancel();
-    lunarAnimation = lunarSurface.animate(
-      [
-        { transform: currentTransform },
-        { transform: `perspective(1100px) rotateX(${vertical * -4}deg) rotateY(${horizontal * 4}deg) translate(${horizontal * 7}px, ${vertical * 5}px)` },
-      ],
-      { duration: 650, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" },
-    );
-  }
-
-  lunarStage?.addEventListener("pointermove", (event): void => {
-    if (pendingFrame || reducedMotion.matches || !precisePointer.matches) return;
-    pendingFrame = requestAnimationFrame((): void => {
-      pendingFrame = 0;
-      const bounds = lunarStage.getBoundingClientRect();
-      moveMoon((event.clientX - bounds.left) / bounds.width - .5, (event.clientY - bounds.top) / bounds.height - .5);
-    });
-  });
-  lunarStage?.addEventListener("pointerleave", (): void => {
-    cancelAnimationFrame(pendingFrame);
-    pendingFrame = 0;
-    moveMoon(0, 0);
-  });
   reducedMotion.addEventListener("change", (): void => {
-    if (reducedMotion.matches) {
-      cancelAnimationFrame(pendingFrame);
-      pendingFrame = 0;
-      lunarAnimation?.cancel();
-    }
     manualMotion = false;
     updateMoonMotion();
   });
