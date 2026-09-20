@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+  <defs>
+    <mask id="crescent">
+      <circle cx="320" cy="320" r="300" fill="white"/>
+      <circle cx="292" cy="302" r="270" fill="black"/>
+    </mask>
+  </defs>
+  <circle cx="320" cy="320" r="300" fill="#090a0c"/>
+  <circle cx="320" cy="320" r="300" fill="#ece7dd" mask="url(#crescent)"/>
+</svg>
