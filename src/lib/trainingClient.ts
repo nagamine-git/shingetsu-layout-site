@@ -354,7 +354,12 @@ function renderAnalysis(): void {
   weak.replaceChildren();
   pairList.replaceChildren();
   const stats = profile[method()];
-  const candidates = [...new Set(run.assessmentSamples.map((sample): string => sample.text))].sort((left, right): number => priority(stats[right], Date.now()) - priority(stats[left], Date.now())).slice(0, 4);
+  const score = (kana: string): number => {
+    const samples = run.assessmentSamples.filter((sample): boolean => sample.text === kana);
+    return priority(stats[kana], Date.now()) + samples.reduce((total, sample): number => total + sample.errors * 10 + (sample.hinted ? 2 : 0), 0)
+      + median(samples.filter((sample): boolean => sample.milliseconds > 0).map((sample): number => sample.milliseconds / sample.strokes)) / 1200;
+  };
+  const candidates = [...new Set(run.assessmentSamples.map((sample): string => sample.text))].sort((left, right): number => score(right) - score(left)).slice(0, 4);
   for (const kana of candidates) {
     const samples = run.assessmentSamples.filter((sample): boolean => sample.text === kana);
     const mistakes = samples.reduce((total, sample): number => total + sample.errors, 0);
