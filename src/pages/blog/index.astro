@@ -22,6 +22,7 @@ const allTags = [...new Set(posts.flatMap((p) => p.data.tags))];
         <button
           class="tag-filter px-3 py-1 rounded-full border text-xs transition-colors bg-brand-500/20 border-brand-500/40 text-brand-300"
           data-tag=""
+          aria-pressed="true"
         >
           すべて
         </button>
@@ -29,6 +30,7 @@ const allTags = [...new Set(posts.flatMap((p) => p.data.tags))];
           <button
             class="tag-filter px-3 py-1 rounded-full border text-xs transition-colors bg-[var(--color-surface-2)] border-white/10 text-slate-400 hover:border-brand-500/40 hover:text-brand-300"
             data-tag={tag}
+            aria-pressed="false"
           >
             #{tag}
           </button>
@@ -77,9 +79,10 @@ const allTags = [...new Set(posts.flatMap((p) => p.data.tags))];
   const buttons = document.querySelectorAll<HTMLButtonElement>(".tag-filter");
   const cards = document.querySelectorAll<HTMLElement>(".post-card");
 
-  function applyFilter(tag: string) {
+  function applyFilter(tag: string): void {
     buttons.forEach((btn) => {
       const active = btn.dataset.tag === tag;
+      btn.setAttribute("aria-pressed", String(active));
       btn.classList.toggle("bg-brand-500/20", active);
       btn.classList.toggle("border-brand-500/40", active);
       btn.classList.toggle("text-brand-300", active);

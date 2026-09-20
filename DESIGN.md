@@ -13,6 +13,21 @@
 
 ### 文字組み
 
+- 2026-09-20 統一パス: 全ページの見出しは明朝 Medium 500、本文・ナビ・操作・配列・成績は Noto Sans JP。装飾ラベルに混在していた OS 依存の等幅書体と Georgia は除去し、コードだけ等幅を維持。成績は桁幅固定で揃える。
+- Noto Sans JP は可変 WOFF2 約 376 KiB を自サイト配信。Google Fonts の外部 CSS・接続待ちを撤去。`font-display: swap` でフォント失敗時も本文を表示する。見出しと合わせたフォント転送量は約 553 KiB（キャッシュ前）。速度向上や CWV 合格を保証する値ではない。
+- Noto の配布元は https://github.com/google/fonts/tree/main/ofl/notosansjp 。OFL 同梱。元の `NotoSansJP[wght].ttf` を `pyftsubset --text-file=<srcの文字集合> --unicodes='U+0020-007E,U+3000-30FF,U+FF00-FFEF' --flavor=woff2 --layout-features='*'` で変換。記事追加時は両フォントを再生成する。未収録文字とユーザー入力はシステム書体にフォールバック。
+- モバイルのナビ・タブは 11px 以上、ナビと記事フィルターは高さ 44px、主要 CTA は 48px 以上。フォーム入力と練習選択は 16px で、iOS の小文字入力時の拡大を避ける。
+- ナビに練習室を追加。ブログ・問い合わせの現在地は `aria-current`、記事フィルターの選択は `aria-pressed` で視覚と読み上げを一致させる。
+
+### 段階表示
+
+- `src/lib/reveal.ts` が見出し、特徴カード、導入ステップ、FAQ、記事カード、記事の節見出しなどを一度だけ表示演出。720ms、同時に入った要素を 85ms 間隔、待ちは最大 255ms。移動は 18px、opacity は .35 から 1。ぼかしは本文へかけない。
+- CSS の初期非表示やスクロールによる本文の生成は行わない。JS 失敗・未対応・無効でも本文とリンクを読める。IntersectionObserver と Web Animations は段階的な装飾で、スクロールを奪わない。
+- 入力中の領域は演出対象外。フォーカスが入れば当該演出を解除。動きを減らす設定、タブ非表示、印刷時にも解除。月のアニメーションは別管理し、完全一致してから後光が出て止まる既存動作を維持。
+- 本文・title・description・canonical・robots・JSON-LD を変更せず、プリレンダリングも維持する。参考: https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics 。検索順位や AI 回答での引用を保証するものではない。
+
+### 既存の文字組み方針
+
 - ブランド・ヒーロー・主要見出しは「しっぽり明朝 Medium」。太いゴシック一辺倒から、縦横の線の強弱を持つ明朝と操作用ゴシックの組み合わせへ変更。
 - 見出しのかなは `palt` で字面を整え、本文には適用しない。「最高効率」を大きく、「の」を小さく組む。文言は保持する。
 - スマートフォン専用の文字サイズ・字間・行間を設定。配列の文字、入力結果、ボタン、説明文には読みやすいゴシックを維持する。
@@ -34,6 +49,9 @@
 
 ## 検証
 
+- 重なりのアクセント: 開始から 6.4 秒で月が完全一致した直後、輪郭に沿う銀青色の光を 280ms で一度だけ強め、7.76 秒までに消す。輪郭の位置・サイズは動かさず、既存の後光へ引き継ぐ。紙吹雪・周回装飾・画面全体のフラッシュは追加しない。追加描画は 1 要素の固定シャドウと opacity のみ。停止・再生・画面外の一時停止は月と同期し、reduced-motion では手動再生時もアクセントを非表示にする。
+- 統一パス追加検証: Chromium / Firefox / WebKit で、13 ページすべての main 本文・リンク・title・description・canonical・robots・OG・JSON-LD を変更前 HTML と照合し一致。JavaScript 無効状態で比較した。
+- 本文フォントのローカル読み込み、カードの順次遅延、フォーカス時と reduced-motion 切替時の解除、記事フィルター状態、ブログでの IntersectionObserver 未対応時の静的表示を検証。月の正確な重なり・停止・再生、練習全 4 モードと保存、6 幅のレイアウトも再検証した。
 - `pnpm build` と `git diff --check` 成功。
 - ローカル Playwright の Chromium、Firefox、WebKit で 320 / 375 / 390 / 768 / 1024 / 1440 px の横溢れなしを確認。
 - レイヤー切替、OS 切替と矢印キー、物理キーと画面上キーによる入力、FAQ、JavaScript 無効時、動きを減らす設定への切替を検証。
