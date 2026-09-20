@@ -83,6 +83,8 @@
 .eclipse { width: 112%; aspect-ratio: 1; position: absolute; left: -2%; top: 0; }
 .eclipse-disc { position: absolute; inset: 15%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 29% 23%, #1c1c1d 0, #101113 24%, #030405 65%, #050607 85%); box-shadow: inset -1px -2px 3px #cdbda573, inset 1px 1px 3px #91827120, 4px 6px 12px #e6d2ab38, 12px 16px 40px #c7b3911c; }
 .eclipse-grain { width: 100%; height: 100%; opacity: .075; mix-blend-mode: screen; }
+.eclipse-phase { position: absolute; inset: 15%; width: 70%; height: 70%; overflow: hidden; border-radius: 50%; pointer-events: none; }
+.eclipse-phase-shadow { transform: translateX(0); }
 .eclipse-halo { position: absolute; inset: 3%; border-radius: 50%; background: radial-gradient(circle, transparent 48%, #e8d5b035 52%, #d3c1a113 58%, transparent 70%); filter: blur(9px); }
 .eclipse-corona { position: absolute; inset: 15%; border-radius: 50%; border: 1px solid transparent; border-right-color: #f3e6cfaa; border-bottom-color: #f3e6cf; box-shadow: 1px 2px 5px #f7e8cb5e; transform: rotate(-26deg); }
 .eclipse-orbit { position: absolute; inset: 1%; border: 1px solid #ddd1bc1a; border-radius: 50%; transform: rotate(-32deg) scaleY(.47); }
@@ -205,6 +207,8 @@ main > .pt-28 > h1, main > article h1 { font-weight: 500; letter-spacing: -.025e
 @media (prefers-reduced-motion: no-preference) {
   .hero-copy { animation: hero-arrive 1s var(--lunar-ease) both; }
   .hero-art { animation: moon-arrive 1.5s var(--lunar-ease) both; }
+  .eclipse-phase-shadow { animation: moon-to-new 6s .8s cubic-bezier(.4, 0, .2, 1) both; }
+  @keyframes moon-to-new { from { transform: translateX(-72px); } to { transform: translateX(0); } }
   @keyframes hero-arrive { from { opacity: .5; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes moon-arrive { from { opacity: .45; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
 }
