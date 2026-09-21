@@ -1,0 +1,47 @@
+---
+interface Props { id: string; }
+const { id } = Astro.props;
+---
+
+<div class="keyboard-geometry-control" hidden>
+  <label for={id}>キーボードの形</label>
+  <select id={id} data-keyboard-geometry-select title="表示の形だけを変更します。キーの割り当ては変わりません。">
+    <option value="staggered">一般的な配列（斜め）</option>
+    <option value="grid">格子配列</option>
+    <option value="split">左右分割（5列ずつ）</option>
+  </select>
+</div>
+
+<script>
+  import { keyboardOffset, keyboardWidth, readGeometry, type KeyboardGeometry } from "../lib/keyboardGeometry";
+
+  const storageKey = "shingetsu-keyboard-geometry-v1";
+  const selectors = [...document.querySelectorAll<HTMLSelectElement>("[data-keyboard-geometry-select]")];
+
+  function applyGeometry(geometry: KeyboardGeometry): void {
+    document.documentElement.dataset.keyboardGeometry = geometry;
+    for (const selector of selectors) selector.value = geometry;
+    for (const svg of document.querySelectorAll<SVGSVGElement>("svg[data-keyboard-pitch]")) {
+      const pitch = Number(svg.dataset.keyboardPitch);
+      svg.setAttribute("viewBox", `0 0 ${keyboardWidth(geometry, pitch)} ${svg.dataset.keyboardHeight}`);
+      for (const key of svg.querySelectorAll<SVGGElement>("[data-keyboard-row]")) {
+        key.setAttribute("transform", `translate(${keyboardOffset(geometry, Number(key.dataset.keyboardRow), Number(key.dataset.keyboardColumn), pitch)}, 0)`);
+      }
+    }
+  }
+
+  let initial: KeyboardGeometry = "staggered";
+  try { initial = readGeometry(localStorage.getItem(storageKey)); } catch { initial = "staggered"; }
+  applyGeometry(initial);
+  for (const selector of selectors) {
+    selector.closest<HTMLElement>(".keyboard-geometry-control")!.hidden = false;
+    selector.addEventListener("change", (): void => {
+      const geometry = readGeometry(selector.value);
+      applyGeometry(geometry);
+      try { localStorage.setItem(storageKey, geometry); } catch { return; }
+    });
+  }
+  window.addEventListener("storage", (event): void => {
+    if (event.key === storageKey || event.key === null) applyGeometry(readGeometry(event.newValue));
+  });
+</script>

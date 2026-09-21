@@ -1,5 +1,6 @@
 ---
 import layoutData from "../data/layout.json";
+import KeyboardGeometry from "./KeyboardGeometry.astro";
 
 const phys = layoutData.layers[0].keys;
 const base = layoutData.layers.find((l) => l.id === 1)!.keys;
@@ -22,6 +23,7 @@ const modKeys = new Set(["d", "k", "l"]);
       </p>
     </div>
 
+    <KeyboardGeometry id="demo-geometry" />
     <!-- Output -->
     <div
       id="td-stage"
@@ -54,7 +56,7 @@ const modKeys = new Set(["d", "k", "l"]);
       <div class="mt-6 space-y-1.5 select-none">
         {phys.map((row, rowIndex) => (
           <div
-            class="typing-row flex justify-center gap-1 sm:gap-1.5"
+            class="keyboard-row typing-row"
             data-row={rowIndex}
           >
             {row.map((key, colIndex) => {
