@@ -4,6 +4,9 @@ import { isLongMarkInput, matchesTrainingCharacter } from "./longMark";
 import { TrainingAudio, type BgmPreset, type KeySound } from "./trainingAudio";
 import { progressMilestones } from "./trainingProgress";
 import { TrainingProgressView } from "./trainingProgressView";
+import { planSession, type SessionPlan } from "./trainingPlan";
+import { drillChanges, drillDuration, keyHeat, pairLabel, selectDrillPassages, sprintAdvice, sprintDuration, sprintTarget, weakTargets, type DrillTarget } from "./trainingDrill";
+import layoutData from "../data/layout.json";
 import type { TrainingSoundRecord } from "./training";
 
 function element<ElementType extends HTMLElement = HTMLElement>(id: string): ElementType {
@@ -24,13 +27,14 @@ const materialSelect = element<HTMLSelectElement>("lab-material");
 const geometrySelect = element<HTMLSelectElement>("lab-geometry");
 const imeInput = element<HTMLTextAreaElement>("lab-ime-input");
 const keys = [...app.querySelectorAll<HTMLButtonElement>(".lab-key")];
-const modeButtons = [...app.querySelectorAll<HTMLButtonElement>("[data-mode]")];
-const names: Record<TrainingMode, string> = { learn: "習得", review: "復習", speed: "高速化", benchmark: "定点測定", ime: "IME実践", focus: "集中" };
+const modeButtons = [...app.querySelectorAll<HTMLButtonElement>(".lab-modes [data-mode]")];
+const names: Record<TrainingMode, string> = { learn: "習得", review: "復習", speed: "高速化", benchmark: "定点測定", ime: "IME実践", focus: "集中", drill: "弱点ドリル" };
 const methodNames: Record<TrainingMethod, string> = { keyboard: "PC", touch: "タップ", ime: "IME" };
 let profile: TrainingProfile = freshProfile();
 let storageAvailable = true;
 try { profile = readProfile(localStorage.getItem(trainingStorageKey)); } catch { storageAvailable = false; }
-let mode: TrainingMode = new URLSearchParams(location.search).get("mode") === "focus" ? "focus" : "learn";
+const requestedMode = new URLSearchParams(location.search).get("mode");
+let mode: TrainingMode = requestedMode === "focus" || requestedMode === "drill" ? requestedMode : "learn";
 let returnMode: TrainingMode = "learn";
 let state: "ready" | "running" | "paused" | "done" | "rest" = "ready";
 let run: TrainingRun;
@@ -41,6 +45,12 @@ let manualHint = false;
 let focus = "";
 let nextFocus = "";
 let pace = 0;
+let drillTargets: DrillTarget[] = [];
+// 「練習する」＝自動メニュー。手動でモードを選ぶと false
+let auto = requestedMode !== "focus" && requestedMode !== "drill";
+let plan: SessionPlan | undefined;
+const autoButton = element<HTMLButtonElement>("lab-auto");
+const measureButton = element<HTMLButtonElement>("lab-measure");
 let composing = false;
 let imeFinished = 0;
 let imeValue = "";
@@ -96,8 +106,24 @@ if (new URLSearchParams(location.search).get("material") === "paragraph") materi
 
 function method(): "keyboard" | "touch" { return methodSelect.value === "touch" ? "touch" : "keyboard"; }
 function effectiveMethod(): TrainingMethod { return mode === "ime" ? "ime" : method(); }
-function timed(): boolean { return mode === "speed" || mode === "benchmark" || mode === "ime" || mode === "focus"; }
-function duration(): number { return mode === "speed" || mode === "focus" ? Number(durationSelect.value) : timed() ? 60 : 0; }
+// IME は入力方法。選ばれていればモードは常に ime（固定文 60 秒）、外れたら通常モードへ戻す
+function syncMethod(): void {
+  if (methodSelect.value === "ime") mode = "ime";
+  else if (mode === "ime") mode = auto ? "learn" : "benchmark";
+}
+function applyPlan(): void {
+  syncMethod();
+  if (mode === "ime") { plan = undefined; return; }
+  plan = planSession(profile, method(), Date.now(), materialSelect.value === "paragraph" ? "paragraph" : "short");
+  mode = plan.mode;
+  if (plan.duration) durationSelect.value = String(plan.duration);
+  levelSelect.value = plan.mode === "learn" ? String(plan.stage) : "auto";
+  hintsSelect.value = plan.hints;
+}
+function timed(): boolean { return mode === "speed" || mode === "benchmark" || mode === "ime" || mode === "focus" || mode === "drill"; }
+function duration(): number { return mode === "speed" || mode === "focus" ? Number(durationSelect.value) : mode === "drill" ? drillDuration : timed() ? 60 : 0; }
+// 高速化モードの 15 秒＝疾走（オーバースピード）。目標は自己ベスト +8%
+function sprinting(): boolean { return mode === "speed" && duration() === sprintDuration; }
 function level(): number { return timed() ? 5 : levelSelect.value === "auto" ? suggestedStage(profile[method()]) : Number(levelSelect.value); }
 function material(): TrainingMaterial { return (mode === "focus" || mode === "speed") && materialSelect.value === "paragraph" ? "paragraph" : "short"; }
 function signature(): string { return `${mode}:${effectiveMethod()}:${duration()}:${level()}:${material() === "paragraph" ? "paragraph:" : ""}v1${effectiveMethod() === "touch" ? "" : ":longmark-v1"}`; }
@@ -116,7 +142,7 @@ function persist(): void {
 }
 
 function lockSettings(locked: boolean): void {
-  for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect, geometrySelect, ...modeButtons]) control.disabled = locked;
+  for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect, geometrySelect, autoButton, measureButton, ...modeButtons]) control.disabled = locked;
   element<HTMLButtonElement>("lab-quest-start").disabled = locked;
   element<HTMLButtonElement>("lab-reset").disabled = locked;
   element<HTMLInputElement>("lab-import").disabled = locked;
@@ -182,8 +208,9 @@ function renderHistory(): void {
     map.append(group);
   }
   map.hidden = mode === "ime";
+  renderHeatMap();
   const due = Object.entries(profile[method()]).filter(([kana, skill]): boolean => kana.length === 1 && skill.due <= Date.now()).length;
-  element("lab-due").textContent = mode === "ime" ? "IME実践はかなの習熟判定に含めません。" : due ? `${due}文字が復習の時期。復習モードで思い出しましょう。` : "復習の期限は、練習を重ねるとここに表示します。";
+  element("lab-due").textContent = mode === "drill" ? (drillTargets.length ? drillTargets.map((target): string => `${target.label}（${target.reason}）`).join(" / ") : "記録が増えると、ここに狙う弱点が並びます。") : mode === "ime" ? "IME実践はかなの習熟判定に含めません。" : due ? `${due}文字が復習の時期。復習モードで思い出しましょう。` : "復習の期限は、練習を重ねるとここに表示します。";
   element("lab-storage-message").textContent = storageAvailable ? "成績はこのブラウザだけに保存。端末間の移動にはバックアップを使えます。" : "この環境では保存できません。練習は使えますが、閉じる前に記録を書き出してください。";
   renderDaily();
   progressView.render();
@@ -288,11 +315,14 @@ function renderMetrics(): void {
   element("lab-errors").textContent = String(mode === "ime" ? imeTotal - imeCorrect : run.errors);
   element("lab-clock").textContent = state === "running" || state === "paused" ? timed() ? `${Math.max(0, duration() - Math.floor(seconds))} s` : `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}` : state === "ready" ? mode === "focus" ? `${duration()} s` : "READY" : "COMPLETE";
   element<HTMLProgressElement>("lab-progress").value = timed() ? Math.min(100, seconds / duration() * 100) : run.completed / run.passages.reduce((total, passage): number => total + passage.reading.length, 0) * 100;
-  element("lab-pace").textContent = pace && mode === "speed" ? `目安 ${pace}かな/分 · ${seconds >= 1 ? `${Math.round(run.completed - pace * seconds / 60)}文字` : "過去の同条件中央値＋3%"}` : mode === "ime" ? "変換後の文字で計測" : mode === "benchmark" ? "固定文 v1 / 60秒 / ガイドなし" : "正確さを保って、少しずつ。";
+  element("lab-pace").textContent = pace && mode === "speed" ? `${sprinting() ? "目標" : "目安"} ${pace}かな/分 · ${seconds >= 1 ? `${Math.round(run.completed - pace * seconds / 60)}文字` : sprinting() ? "自己ベスト＋8%" : "過去の同条件中央値＋3%"}` : sprinting() ? "疾走の目標は、30〜120秒の自己ベストから作ります。" : mode === "ime" ? "変換後の文字で計測" : mode === "benchmark" ? "固定文 v1 / 60秒 / ガイドなし" : "正確さを保って、少しずつ。";
   renderDaily();
 }
 
-function passages(): Passage[] { return selectPassages(profile, method(), mode, level(), Date.now(), Math.random, focus, material()); }
+function passages(): Passage[] {
+  if (mode === "drill") return selectDrillPassages(profile, drillTargets, Math.random);
+  return selectPassages(profile, method(), mode, level(), Date.now(), Math.random, focus, material());
+}
 
 function prepare(retryPassages?: Passage[]): void {
   cancelPreview();
@@ -302,6 +332,8 @@ function prepare(retryPassages?: Passage[]): void {
   clearInterval(timer);
   clearInterval(restTimer);
   state = "ready";
+  syncMethod();
+  if (mode === "drill") drillTargets = weakTargets(profile, method(), Date.now());
   run = new TrainingRun(retryPassages ?? passages());
   lastHintRender = "";
   manualHint = false;
@@ -330,10 +362,16 @@ function prepare(retryPassages?: Passage[]): void {
   element("lab-focus-shortcut").hidden = mode !== "focus" || method() !== "keyboard";
   delete app.dataset.error;
   lockSettings(false);
-  methodSelect.disabled = mode === "ime";
   hintsSelect.disabled = mode === "benchmark";
   element("lab-stage-control").hidden = timed();
   element("lab-duration-control").hidden = mode !== "speed" && mode !== "focus";
+  // 疾走（15 秒）は高速化モード専用。集中モードで選ばれていたら標準に戻す
+  const sprintOption = durationSelect.querySelector<HTMLOptionElement>(`option[value="${sprintDuration}"]`);
+  if (sprintOption) {
+    sprintOption.hidden = mode !== "speed";
+    sprintOption.disabled = mode !== "speed";
+    if (mode !== "speed" && durationSelect.value === String(sprintDuration)) durationSelect.value = "60";
+  }
   element("lab-material-control").hidden = mode !== "speed" && mode !== "focus";
   element("lab-hints-control").hidden = mode === "ime" || mode === "benchmark";
   element("lab-ime-area").hidden = mode !== "ime";
@@ -344,20 +382,28 @@ function prepare(retryPassages?: Passage[]): void {
   pauseButton.hidden = true;
   startButton.hidden = false;
   startButton.disabled = false;
-  startButton.textContent = mode === "focus" ? `${duration()}秒、集中する ↗` : mode === "benchmark" ? "60秒の定点測定を始める ↗" : mode === "ime" ? "60秒の実入力を始める ↗" : "練習をはじめる ↗";
+  startButton.textContent = mode === "focus" ? `${duration()}秒、集中する ↗` : mode === "benchmark" ? "60秒の定点測定を始める ↗" : mode === "ime" ? "60秒の実入力を始める ↗" : mode === "drill" ? `${drillDuration}秒、弱点を狙う ↗` : sprinting() ? "15秒、限界を試す ↗" : "練習をはじめる ↗";
   element<HTMLButtonElement>("lab-show-hint").disabled = mode === "benchmark" || mode === "ime";
-  for (const button of modeButtons) button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+  for (const button of modeButtons) button.setAttribute("aria-pressed", String(!auto && button.dataset.mode === mode));
+  autoButton.setAttribute("aria-pressed", String(auto));
+  measureButton.setAttribute("aria-pressed", String(!auto && (mode === "benchmark" || mode === "ime")));
+  element("lab-manual-label").textContent = auto ? "" : `現在：${names[mode]}`;
+  element("lab-auto-hint").textContent = mode === "ime" ? "IME で固定文 60 秒。変換後の文字で計測" : auto && plan ? `次：${plan.title}` : "記録から今日のメニューを自動で決めます";
   const currentStage = curriculum[level()];
   element("lab-plan-title").textContent = timed() ? names[mode] : `${level() + 1}. ${currentStage.name}`;
-  element("lab-plan-description").textContent = mode === "learn" ? currentStage.detail : mode === "review" ? "未定着・遅い文字・復習時期の文字を含む語や文を多めに。得意な文字も混ぜます。" : mode === "focus" ? "短く打って、結果を振り返る。Enterで同じ条件の次の一本へ。" : mode === "speed" ? "自然な文章で流れを作る。95%以上の正確さを保って、少しずつ速く。" : mode === "benchmark" ? "学習用とは別の固定文。同じ入力方法・同じ60秒で、日を空けて測りましょう。" : "導入済みIMEで漢字変換まで。新月配列をオンにして、日本語入力へ切り替えてください。";
-  element("lab-session-label").textContent = `${names[mode]} / ${timed() ? "CONTINUOUS FLOW" : "ADAPTIVE PRACTICE"}`;
+  element("lab-plan-description").textContent = mode === "learn" ? currentStage.detail : mode === "review" ? "未定着・遅い文字・復習時期の文字を含む語や文を多めに。得意な文字も混ぜます。" : mode === "focus" ? "短く打って、結果を振り返る。Enterで同じ条件の次の一本へ。" : mode === "speed" ? (sprinting() ? "自己ベスト+8%を目標に15秒だけ全力。上限を押し上げたら、60秒で正確さを取り戻す。" : "自然な文章で流れを作る。95%以上の正確さを保って、少しずつ速く。") : mode === "drill" ? (drillTargets.length ? "本人の中央値より遅いかな・2打鍵を自動で選び、それを含む文7割・得意な文3割で45秒。" : "弱点を選ぶには記録が足りません。習得・復習・高速化を数回重ねると、ここに狙いが出ます。今回は通常の短文で。") : mode === "benchmark" ? "学習用とは別の固定文。同じ入力方法・同じ60秒で、日を空けて測りましょう。" : "導入済みIMEで漢字変換まで。新月配列をオンにして、日本語入力へ切り替えてください。";
+  element("lab-session-label").textContent = `${auto && mode !== "ime" ? "自動 · " : ""}${names[mode]} / ${timed() ? "CONTINUOUS FLOW" : "ADAPTIVE PRACTICE"}`;
+  if (auto && plan && mode === plan.mode) {
+    element("lab-plan-title").textContent = plan.title;
+    element("lab-plan-description").textContent = plan.reason;
+  }
   element("lab-cpm-label").textContent = mode === "ime" ? "変換後の文字 / 分" : "かな / 分";
   element("lab-accuracy-label").textContent = mode === "ime" ? "確定文の一致率" : "打鍵正確率";
   element("lab-errors-label").textContent = mode === "ime" ? "不一致文字" : "ミス打鍵";
-  element("lab-focus").textContent = focus ? `「${focus}」を含む、別の文脈で復習。` : mode === "review" ? "覚えているか、ガイドなしで一度試そう。" : mode === "ime" ? "修正も変換も含めた、実際の入力速度。" : "速さより、迷わず正確に。";
+  element("lab-focus").textContent = mode === "drill" && drillTargets.length ? `狙う：${drillTargets.map((target): string => target.label).join(" · ")}` : focus ? `「${focus}」を含む、別の文脈で復習。` : mode === "review" ? "覚えているか、ガイドなしで一度試そう。" : mode === "ime" ? "修正も変換も含めた、実際の入力速度。" : "速さより、迷わず正確に。";
   element("lab-input-help").textContent = mode === "ime" ? "新月配列と日本語IMEをオンに。お題の「ー」はハイフン系表記でも可。文が一致すると次へ。予測変換・貼り付けは使いません。" : method() === "touch" ? "画面のキーを順番にタップ。スマホで配置を覚える練習です。PCの記録とは別に保存します。" : "IMEとOS側の新月配列リマップはオフに。英数・QWERTY状態で、D/Kも順番に押します。長音「ー」はD→P、またはハイフンキーでも入力できます。";
   const comparison = comparableResults(profile, signature()).slice(-5);
-  pace = comparison.length >= 3 ? Math.round(median(comparison.map((result): number => result.cpm)) * 1.03) : 0;
+  pace = sprinting() ? sprintTarget(profile, method(), material()) : comparison.length >= 3 ? Math.round(median(comparison.map((result): number => result.cpm)) * 1.03) : 0;
   status(mode === "focus" ? "最初の打鍵から計測。時間が来たら結果を確認し、Enterで次の一本へ。" : "開始すると、最初の入力から計測します。");
   renderPrompt();
   renderMetrics();
@@ -366,7 +412,7 @@ function prepare(retryPassages?: Passage[]): void {
 
 function start(): void {
   if (state === "rest") return;
-  if (state === "done") prepare();
+  if (state === "done") { if (auto) applyPlan(); prepare(); }
   if (state !== "ready") return;
   state = "running";
   cancelPreview();
@@ -430,7 +476,7 @@ function resume(): void {
 }
 
 function extend(): void {
-  if (timed() && run.passages.length - run.passageIndex <= 2) run.append(mode === "speed" || mode === "focus" ? passages() : benchmarkCorpus);
+  if (timed() && run.passages.length - run.passageIndex <= 2) run.append(mode === "speed" || mode === "focus" || mode === "drill" ? passages() : benchmarkCorpus);
 }
 
 function feed(key: string): void {
@@ -491,6 +537,58 @@ function renderAnalysis(): void {
   element<HTMLButtonElement>("lab-target-review").hidden = !nextFocus || mode === "ime";
 }
 
+function renderDrillReport(): void {
+  const report = element("lab-drill-report");
+  const list = element("lab-drill-list");
+  report.hidden = mode !== "drill" || !drillTargets.length;
+  if (report.hidden) return;
+  list.replaceChildren();
+  const changes = drillChanges(drillTargets, run.assessmentSamples, run.pairs);
+  let faster = 0;
+  for (const change of changes) {
+    const item = document.createElement("li");
+    const measured = change.samples > 0 && change.after > 0;
+    item.dataset.trend = !measured || !change.before ? "none" : change.after <= change.before * .95 ? "faster" : change.after >= change.before * 1.05 ? "slower" : "same";
+    if (item.dataset.trend === "faster") faster += 1;
+    const name = document.createElement("strong");
+    name.textContent = change.target.label;
+    const value = document.createElement("span");
+    value.textContent = measured ? `${change.before}ms → ${change.after}ms · ${change.samples}標本` : "この回は標本なし";
+    item.append(name, value);
+    list.append(item);
+  }
+  if (changes.length) {
+    element("lab-advice-title").textContent = faster >= Math.ceil(changes.length / 2) ? "狙いどおり。日を空けて、もう一度。" : "まだ遅い。同じ弱点を、別の文で。";
+    element("lab-advice").textContent = faster >= Math.ceil(changes.length / 2) ? "半数以上の弱点が速くなりました。1回の改善は一時的なこともあるので、明日以降の弱点ドリルで同じ項目が消えているかを確かめましょう。" : "弱点は本人比で選び直されます。もう一本の弱点ドリルか、遅い2打鍵を意識しながらの高速化60秒で、指の順序を身体に入れましょう。";
+  }
+}
+
+function renderHeatMap(): void {
+  const map = element("lab-heat-map");
+  map.replaceChildren();
+  const heats = new Map(keyHeat(profile.pairs[method()]).map((heat): [string, typeof heat] => [heat.key, heat]));
+  for (const row of layoutData.layers[0].keys) {
+    const line = document.createElement("div");
+    line.className = "keyboard-row";
+    for (const key of row) {
+      const heat = heats.get(key);
+      const cell = document.createElement("span");
+      const measured = heat !== undefined && heat.level >= 0;
+      cell.dataset.heat = measured ? "measured" : "none";
+      cell.style.setProperty("--heat", measured ? heat.level.toFixed(2) : "0");
+      const label = document.createElement("small");
+      label.textContent = measured ? `${heat.milliseconds}ms` : "—";
+      cell.append(key.toUpperCase(), label);
+      cell.title = measured ? `${key.toUpperCase()}：このキーへ移る平均 ${heat.milliseconds}ms · ${heat.samples}標本` : `${key.toUpperCase()}：3標本未満`;
+      line.append(cell);
+    }
+    map.append(line);
+  }
+  const measured = [...heats.values()].filter((heat): boolean => heat.level >= 0);
+  map.hidden = mode === "ime";
+  element("lab-heat-note").textContent = mode === "ime" ? "IME実践では物理打鍵を記録しません。" : measured.length ? `濃いほど遅い。3標本未満のキーは灰色。いちばん遅いキーは ${[...measured].sort((left, right): number => right.milliseconds - left.milliseconds).slice(0, 3).map((heat): string => `${heat.key.toUpperCase()} ${heat.milliseconds}ms`).join("、")}。` : "PC・タップで練習すると、キーごとの打鍵間隔がここに表示されます。";
+}
+
 function drawChart(): void {
   const values = run.trace;
   const max = Math.max(20, ...values.map((value): number => value.cpm));
@@ -522,7 +620,6 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
   startButton.hidden = false;
   startButton.textContent = "次の練習へ ↗";
   lockSettings(false);
-  methodSelect.disabled = mode === "ime";
   hintsSelect.disabled = mode === "benchmark";
   const seconds = run.elapsed(now) / 1000;
   if (!run.started || seconds < .001) { prepare(); status("入力前に終了しました。記録は保存していません。"); return; }
@@ -550,11 +647,17 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
   element("lab-result-title").textContent = interrupted ? "ここで、ひと区切り。" : "一歩、指に馴染んだ。";
   element("lab-advice-title").textContent = mode === "ime" ? "実際の仕事へ、つなげよう。" : result.accuracy < 95 ? "少し速度を落とし、正確に。" : result.assisted ? "次は、ガイドを少し減らす。" : "別の文でも、同じように。";
   element("lab-advice").textContent = mode === "ime" ? "変換の修正時間も含めた結果です。候補の選択で迷った語は、実際に使う文の中で試しましょう。" : result.accuracy < 95 ? "まずミスした文字を含む短文を復習。正確さが戻ってから、高速化へ進みましょう。" : result.assisted ? "ガイドを見ずに思い出す練習へ。自動ガイドは、迷ったときや誤打時にだけ戻ります。" : "今できたことが、明日もできるか。日を空けた復習と定点測定で確かめましょう。速さは正確さを保てる範囲で。";
+  if (sprinting()) {
+    const advice = sprintAdvice(result.cpm, result.accuracy, pace);
+    element("lab-advice-title").textContent = advice.title;
+    element("lab-advice").textContent = advice.body;
+  }
+  renderDrillReport();
   renderAnalysis();
   element("lab-focus-cpm").textContent = String(Math.round(result.cpm));
   element("lab-focus-accuracy").textContent = `${result.accuracy.toFixed(1)}%`;
   element("lab-focus-summary").textContent = `${result.kana}文字 · ${Math.round(seconds)}秒${result.material === "paragraph" ? " · 文章" : ""} · ${methodNames[result.method]}${result.method === "touch" ? "（PC速度とは比較しません）" : ""}`;
-  element("lab-focus-tip").textContent = `${element("lab-advice-title").textContent}${nextFocus ? ` 次は「${/[a-z;]/.test(nextFocus) ? Array.from(nextFocus).join(" → ").toUpperCase() : nextFocus}」を意識して。` : ""}`;
+  element("lab-focus-tip").textContent = `${element("lab-advice-title").textContent}${nextFocus ? ` 次は「${/[a-z;]/.test(nextFocus) ? pairLabel(nextFocus) : nextFocus}」を意識して。` : ""}`;
   element("lab-focus-storage").textContent = storageAvailable ? "この端末に保存しました。履歴は「モード選択」から。" : "この環境では記録を保存できません。「モード選択」から記録を書き出してください。";
   drawChart();
   renderHint();
@@ -677,7 +780,8 @@ element("lab-sound-preview").addEventListener("click", async (): Promise<void> =
 });
 element("lab-quest-start").addEventListener("click", (): void => {
   if (state === "running" || state === "paused") return;
-  if (mode !== "ime") mode = "review";
+  auto = false;
+  if (mode !== "ime") mode = element("lab-quest-start").dataset.quest === "drill" ? "drill" : "review";
   focus = "";
   hintsSelect.value = "auto";
   prepare();
@@ -696,6 +800,27 @@ window.addEventListener("pagehide", (): void => { cancelPreview(); sound.mute();
 renderSound();
 
 startButton.addEventListener("click", start);
+autoButton.addEventListener("click", (): void => {
+  if (state === "running" || state === "paused") return;
+  auto = true;
+  focus = "";
+  closeFocusSettings();
+  applyPlan();
+  prepare();
+  start();
+});
+// 測る: 固定文 60 秒（IME が選ばれていれば prepare 内で ime に切り替わる）
+measureButton.addEventListener("click", (): void => {
+  if (state === "running" || state === "paused" || state === "rest") return;
+  auto = false;
+  if (mode !== "focus") returnMode = mode;
+  mode = "benchmark";
+  focus = "";
+  hintsSelect.value = "off";
+  closeFocusSettings();
+  prepare();
+  start();
+});
 element("lab-retry").addEventListener("click", retry);
 document.addEventListener("keydown", (event): void => {
   if (mode !== "focus" || event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
@@ -738,6 +863,7 @@ element("lab-show-hint").addEventListener("click", (): void => {
 });
 for (const button of modeButtons) button.addEventListener("click", (): void => {
   if (mode !== "focus") returnMode = mode;
+  auto = false;
   mode = button.dataset.mode as TrainingMode;
   focus = "";
   hintsSelect.value = mode === "speed" || mode === "benchmark" || mode === "focus" ? "off" : "auto";
@@ -745,9 +871,15 @@ for (const button of modeButtons) button.addEventListener("click", (): void => {
   prepare();
   if (mode === "focus") { startButton.focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: "instant" }); }
 });
-for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect]) control.addEventListener("change", (): void => { focus = ""; prepare(); });
+for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect]) control.addEventListener("change", (): void => {
+  focus = "";
+  // 入力方法・文章の種類が変わると自動メニューも変わる。秒数やヒントの手動調整は尊重する
+  if (auto && (control === methodSelect || control === materialSelect)) applyPlan();
+  prepare();
+});
 element("lab-target-review").addEventListener("click", (): void => {
   const previousLevel = level();
+  auto = false;
   mode = "review";
   levelSelect.value = String(previousLevel);
   hintsSelect.value = "auto";
@@ -855,5 +987,6 @@ element("lab-reset").addEventListener("click", (): void => {
   element("lab-data-status").textContent = "この練習の記録を削除しました。";
 });
 
+if (auto) applyPlan();
 prepare();
 app.hidden = false;
