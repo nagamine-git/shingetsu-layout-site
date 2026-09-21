@@ -1,0 +1,94 @@
+---
+const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
+const practicing = pathname === "/practice";
+const groups = [
+  { title: "知る", caption: "ABOUT THE LAYOUT", links: [
+    { href: "/#features", label: "新月配列の特徴", description: "30キーに、日本語を。" },
+    { href: "/#layer-demo", label: "配列を確かめる", description: "3つのレイヤーとキーの配置" },
+    { href: "/#get-started", label: "導入方法", description: "自分のキーボードで使い始める" },
+  ] },
+  { title: "練習する", caption: "FIND YOUR RHYTHM", links: [
+    { href: "/practice/", label: "練習室", description: "習得・復習・高速化をひとつに" },
+    { href: "/practice/?mode=focus", label: "集中モード", description: "短く打って、結果を振り返る" },
+    { href: "/practice/?mode=focus&material=paragraph", label: "まとまった文章", description: "文脈のある文章を、続けて打つ" },
+  ] },
+];
+---
+
+<header class="site-header">
+  <nav class="site-nav page-width" aria-label="メインナビゲーション">
+    <a href="/" class="site-brand" aria-label="新月配列 ホーム">
+      <span class="brand-moon" aria-hidden="true"></span>
+      <span>新月配列<span class="brand-caption" aria-hidden="true">SHINGETSU LAYOUT</span></span>
+    </a>
+    <div class="site-nav-actions">
+      <div class="site-nav-links">
+        <a href="/#features">配列を知る</a>
+        <a href="/blog/" aria-current={pathname.startsWith("/blog") ? "page" : undefined}>読みもの</a>
+      </div>
+      <a class="site-nav-practice" href={practicing ? "/practice/?mode=focus" : "/practice/"}>
+        {practicing ? "集中する" : "練習する"}<span aria-hidden="true">↗</span>
+      </a>
+      <details class="site-menu" id="site-menu">
+        <summary aria-controls="site-menu-panel"><span class="site-menu-icon" aria-hidden="true"></span><span>メニュー</span></summary>
+        <div class="site-menu-panel" id="site-menu-panel">
+          <div class="site-menu-heading"><span>SHINGETSU LAYOUT</span><span>自分のペースで、その先へ。</span></div>
+          <div class="site-menu-groups">
+            {groups.map((group) => <section aria-label={group.title}>
+              <h2><span>{group.caption}</span>{group.title}</h2>
+              <ul>{group.links.map((link) => <li><a href={link.href} aria-current={link.href === "/practice/" && practicing ? "page" : undefined}>
+                <span><strong>{link.label}</strong><small>{link.description}</small></span><span aria-hidden="true">↗</span>
+              </a></li>)}</ul>
+            </section>)}
+          </div>
+          <div class="site-menu-footer" aria-label="読みものとサポート">
+            <a href="/blog/" aria-current={pathname.startsWith("/blog") ? "page" : undefined}>ブログ・更新情報</a>
+            <a href="/contact/" aria-current={pathname === "/contact" ? "page" : undefined}>お問い合わせ</a>
+            <span>練習は登録不要</span>
+          </div>
+        </div>
+      </details>
+    </div>
+  </nav>
+</header>
+
+<script>
+  const menu = document.querySelector<HTMLDetailsElement>("#site-menu");
+  const trigger = menu?.querySelector("summary");
+
+  function closeMenu(restoreFocus = false): void {
+    if (!menu?.open) return;
+    menu.open = false;
+    if (restoreFocus) trigger?.focus();
+  }
+
+  menu?.addEventListener("keydown", (event): void => {
+    if (event.key === "Tab" && !event.shiftKey && event.target === trigger && menu.open) {
+      const firstLink = menu.querySelector<HTMLAnchorElement>("a[href]");
+      if (firstLink) {
+        event.preventDefault();
+        firstLink.focus();
+      }
+      return;
+    }
+    if (event.key !== "Escape" || !menu.open) return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeMenu(true);
+  });
+  document.addEventListener("click", (event): void => {
+    if (event.target instanceof Node && !menu?.contains(event.target)) closeMenu();
+  });
+  menu?.addEventListener("focusout", (event): void => {
+    if (event.relatedTarget instanceof Node && !menu.contains(event.relatedTarget)) closeMenu();
+  });
+  menu?.addEventListener("click", (event): void => {
+    const link = event.target instanceof Element ? event.target.closest("a") : null;
+    if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const destination = new URL(link.href);
+    if (destination.pathname === location.pathname && destination.hash) {
+      closeMenu(true);
+    } else closeMenu();
+  });
+  window.addEventListener("pageshow", (): void => closeMenu());
+</script>

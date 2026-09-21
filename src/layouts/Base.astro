@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import SiteHeader from "../components/SiteHeader.astro";
 
 interface Props {
   title: string;
@@ -81,21 +82,7 @@ const websiteJsonLd = {
   </head>
   <body>
     <a href="#main-content" class="skip-link">本文へ移動</a>
-    <header class="site-header">
-      <nav class="site-nav page-width" aria-label="メインナビゲーション">
-        <a href="/" class="site-brand" aria-label="新月配列 ホーム">
-          <span class="brand-moon" aria-hidden="true"></span>
-          <span>新月配列<span class="brand-caption" aria-hidden="true">SHINGETSU LAYOUT</span></span>
-        </a>
-        <div class="site-nav-links">
-          <a href="/#features" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">特徴</a>
-          <a href="/#get-started" class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">導入方法</a>
-          <a href="/practice" aria-current={Astro.url.pathname.startsWith('/practice') ? 'page' : undefined} class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">練習室</a>
-          <a href="/blog" aria-current={Astro.url.pathname.startsWith('/blog') ? 'page' : undefined} class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">ブログ</a>
-          <a href="/contact" aria-current={Astro.url.pathname.startsWith('/contact') ? 'page' : undefined} class="text-slate-400 hover:text-white transition-colors whitespace-nowrap">お問い合わせ</a>
-        </div>
-      </nav>
-    </header>
+    <SiteHeader />
 
     <main id="main-content" tabindex="-1">
       <slot />
