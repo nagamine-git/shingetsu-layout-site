@@ -109,6 +109,8 @@ export function sprintTarget(profile: TrainingProfile, method: "keyboard" | "tou
   const best = Math.max(0, ...profile.results
     .filter((result): boolean => result.mode === "speed" && result.method === method && result.material === material && Number(result.signature.split(":")[2]) !== sprintDuration)
     .filter((result): boolean => !result.interrupted && !result.assisted && result.accuracy >= 95 && result.duration >= 15 && result.kana >= 10)
+    // 旧入力規則（長音互換前）の記録は comparableResults と同様に分離する
+    .filter((result): boolean => method === "touch" || result.signature.endsWith(":longmark-v1"))
     .map((result): number => result.cpm));
   return best ? Math.round(best * boost) : 0;
 }

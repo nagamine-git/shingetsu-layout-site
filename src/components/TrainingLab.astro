@@ -3,14 +3,13 @@ import layout from "../data/layout.json";
 import { curriculum, trainingCorpus } from "../data/trainingCorpus";
 import { trainingParagraphs } from "../data/trainingParagraphs";
 import KeyboardGeometry from "./KeyboardGeometry.astro";
+// 通常は「練習する」（自動メニュー）と「測る」の 2 択。手動メニューは設定内に畳む。
 const modes = [
   { id: "learn", number: "01", title: "習得", sub: "ことばで覚える" },
-  { id: "review", number: "02", title: "復習", sub: "苦手を、得意に" },
-  { id: "speed", number: "03", title: "高速化", sub: "正確さの、その先" },
-  { id: "benchmark", number: "04", title: "定点測定", sub: "同じ条件で比べる" },
-  { id: "ime", number: "05", title: "IME実践", sub: "変換まで、実際に" },
-  { id: "focus", number: "06", title: "集中", sub: "短く打って、振り返る" },
-  { id: "drill", number: "07", title: "弱点ドリル", sub: "遅い指を、狙い撃つ" },
+  { id: "review", number: "02", title: "復習", sub: "ヒントなしで想起" },
+  { id: "drill", number: "03", title: "弱点ドリル", sub: "遅い指を、狙い撃つ" },
+  { id: "speed", number: "04", title: "高速化", sub: "60秒 / 疾走15秒" },
+  { id: "focus", number: "05", title: "集中画面", sub: "短く打って、振り返る" },
 ];
 ---
 
@@ -20,11 +19,19 @@ const modes = [
     <h1>新月タイピング <span>集中</span></h1>
     <button id="lab-focus-settings" type="button" class="lab-secondary" aria-expanded="false" aria-controls="lab-settings">設定</button>
   </header>
-  <nav class="lab-modes" aria-label="トレーニングの種類">
-    {modes.map((mode) => <button type="button" data-mode={mode.id} aria-pressed={mode.id === "learn"}>
-      <span class="lab-mode-number">{mode.number}</span><span><strong>{mode.title}</strong><small>{mode.sub}</small></span>
-    </button>)}
-  </nav>
+  <div class="lab-launch" role="group" aria-label="練習の始め方">
+    <button id="lab-auto" type="button" class="lab-launch-main" aria-pressed="true"><strong>練習する</strong><small id="lab-auto-hint">記録から今日のメニューを自動で決めます</small></button>
+    <button id="lab-measure" type="button" class="lab-launch-side" data-mode="benchmark" aria-pressed="false"><strong>測る</strong><small>固定文 · 60秒 · 同じ条件で比べる</small></button>
+  </div>
+  <details id="lab-manual" class="lab-manual">
+    <summary>メニューを自分で選ぶ <span id="lab-manual-label" class="lab-muted"></span></summary>
+    <nav class="lab-modes" aria-label="トレーニングの種類">
+      {modes.map((mode) => <button type="button" data-mode={mode.id} aria-pressed="false">
+        <span class="lab-mode-number">{mode.number}</span><span><strong>{mode.title}</strong><small>{mode.sub}</small></span>
+      </button>)}
+    </nav>
+    <p class="lab-muted">自動は、段階が残る人には習得、復習期限があれば想起、全段階が安定したら弱点ドリルと高速化（60秒と疾走15秒の交互）を選びます。</p>
+  </details>
   <div class="lab-soundbar">
     <details id="lab-sound-panel" class="lab-sound-panel">
       <summary>音のアトリエ <span id="lab-sound-label">OFF</span></summary>
@@ -52,7 +59,7 @@ const modes = [
       <p id="lab-plan-description">まずは意味のある短いことばから。</p>
       <div class="lab-controls">
         <label for="lab-method">入力方法</label>
-        <select id="lab-method"><option value="keyboard">PCキーボード</option><option value="touch">画面タップ · 配置を覚える</option></select>
+        <select id="lab-method"><option value="keyboard">PCキーボード</option><option value="touch">画面タップ · 配置を覚える</option><option value="ime">導入済みIME · 漢字変換まで実際に</option></select>
         <div id="lab-stage-control"><label for="lab-level">練習する段階</label><select id="lab-level"><option value="auto">自動 · 記録から選ぶ</option>{curriculum.map((stage, index) => <option value={index}>{index + 1}. {stage.name}</option>)}</select></div>
         <div id="lab-duration-control" hidden><label for="lab-duration">テスト時間</label><select id="lab-duration"><option value="15">15秒 · 疾走（自己ベスト+8%を狙う）</option><option value="30">30秒 · 短く集中</option><option value="60" selected>60秒 · 標準</option><option value="120">120秒 · 持続力</option></select></div>
         <div id="lab-material-control" hidden><label for="lab-material">練習する文章</label><select id="lab-material"><option value="short">語句・短文</option><option value="paragraph">まとまった文章 · 4文でひとつの話</option></select></div>
@@ -170,11 +177,12 @@ const modes = [
     <p><strong>長音「ー」：</strong>PC練習では新月配列のD→Pに加えて、ハイフンキー・テンキーのマイナスでも入力できます。「- － − ‐ ‑ ‒ – — ― ﹣ ｰ ー」を長音の位置だけで受け付けます。Dを押した後はPで完了してください。IME実践でも、お題の「ー」に対して同じ表記を許容します。変換中の未確定文字は採点しません。入力規則が変わったため、PC・IMEの自己ベストは旧記録と分けて比較します。過去の履歴は残ります。</p>
     <p><strong>キーボードの形：</strong>設定で「一般的な配列（斜め）・格子配列・左右分割（5列ずつ）」を選べます。表示の形だけが変わり、キーの割り当てと採点は同じです。選択はこのブラウザに保存し、トップページの配列図・体験・練習にも共通で反映します。集中モードでは「設定」から変更できます。セッション中は誤操作を避けるため変更できません。</p>
     <p><strong>まとまった文章：</strong>集中・高速化モードの設定にある「練習する文章」から選べます。仕事の連絡や日々の風景など、4文でひとつの話になる書き下ろし{trainingParagraphs.length}本を収録。原文全体を読みながら、かなの入力位置に合わせて表示欄が追従します。文章の途中でも時間が来たら終了し、それまでに打ち終えたかなを採点。短文とは自己ベストを分けます。<a href="/practice/?mode=focus&amp;material=paragraph">まとまった文章で集中する →</a></p>
+    <p><strong>練習する（自動）と測る：</strong>「練習する」は記録から次の 1 ブロックを決めます。段階が残る人は習得（復習期限が 3 文字以上たまれば 1 ブロック復習を挟む）、全段階に入ったら復習期限 → 弱点ドリル → 高速化の順。高速化は 60 秒で正確率 96% 以上なら次は疾走 15 秒、疾走の後は必ず 60 秒で定着、と交互にします。同じ種類は連続させません。理由はプラン欄に一文で表示します。「測る」は学習用とは別の固定文・60 秒・ヒントなしで、訓練と測定を分けます。自分で選びたいときは「メニューを自分で選ぶ」から。</p>
     <p><strong>習得・復習・高速化・定点測定・集中：</strong>配列のインストール不要。PCはIMEをオフ、OSのキー変換もオフの英数QWERTY状態にしてください。物理キーの位置を採点します。D/Kは前置シフトなので、同時押しではなく順に押します。濁点はL、半濁点はLを2回。正しい別打鍵経路も受け付けます。誤打では進まないため、Backspaceでの修正は不要です。</p>
     <p><strong>集中：</strong>課題文と小さな残り時間を中心にしたシンプルな画面。初期設定は60秒、設定から30・60・120秒を選べます。最初の打鍵で計測が始まり、時間になると速度・正確率・次の改善点を表示して保存。結果画面でEnter、または「もう一度」のタップで同じ条件の新しい課題へ進みます。Escは練習中でも結果画面でも、同じ課題を最初から即リトライ。入力と残り時間をリセットし、次の打鍵から計測します。途中の記録は中断扱いで保存し、自己ベストに含めません。「中断する」・画面の切り替え・モード選択では再開せず終了します。自動再開や休憩の強制はしません。ガイドは初期状態で非表示、必要ならヒントを使えます。「モード選択」で履歴や詳しい使い方に戻れます。</p>
     <p><strong>弱点ドリル：</strong>PC・タップの記録から、ヒントなし正答率が90%未満のかな、本人の中央値より1.4倍以上遅いかな、1.5倍以上遅い2打鍵を最大6件選びます。絶対値ではなく本人比なので、上級者でも常に次の一手が出ます。選んだ弱点を含む語・短文を約7割、含まない文を約3割混ぜて45秒。結果では弱点ごとに、選定時の基準値とこの回の中央値を並べます。記録が少ないうちは弱点が選べず、通常の短文練習になります。</p>
     <p><strong>疾走（高速化モードの15秒）：</strong>30・60・120秒の高速化で残した比較可能な自己ベスト（正確率95%以上・ヒントなし）に8%を上乗せした値を目標に表示します。正確率が90%を切ったら速すぎ。目標を超えたら、同じ速さを60秒・正確率97%以上で保てるかを確かめてください。15秒の記録は同条件どうしでのみ比較し、他の秒数の自己ベストには含めません。</p>
-    <p><strong>IME実践：</strong><a href="/#get-started">新月配列を導入</a>した環境で日本語IMEをオンにし、表示の漢字・句読点まで入力します。他の配列でも動くため、配列の自動判定や本人確認はしていません。変換後の文字/分で測り、かな/分とは比較しません。</p>
+    <p><strong>IME（入力方法で選択）：</strong><a href="/#get-started">新月配列を導入</a>した環境で日本語IMEをオンにし、表示の漢字・句読点まで入力します。他の配列でも動くため、配列の自動判定や本人確認はしていません。変換後の文字/分で測り、かな/分とは比較しません。</p>
     <p><strong>スマートフォン：</strong>画面タップで配置を学習できます。外付けキーボードも選べます。タップの記録はPCと独立し、PCの運動技能を同等に鍛えるものではありません。IME実践は端末の日本語キーボードを使います。</p>
     <p><strong>操作：</strong>開始後は最初の入力から計測。Escは集中モードで最初からリトライ、習得・復習で一時停止、その他の時間制テストで終了。Tabは通常のフォーカス移動に使えます。タイピング中に別の画面へ移動すると学習は停止、時間制テストは中断記録になり自己ベストから除外します。</p>
   </div></details>

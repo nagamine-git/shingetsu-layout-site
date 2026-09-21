@@ -110,6 +110,7 @@ describe("sprintTarget", () => {
     profile.results.push(result({ cpm: 400, accuracy: 90 })); // 正確率不足
     profile.results.push(result({ cpm: 500, signature: "speed:keyboard:15:5:v1:longmark-v1", duration: 15 })); // 疾走自身は除外
     profile.results.push(result({ cpm: 600, material: "paragraph" }));
+    profile.results.push(result({ cpm: 900, signature: "speed:keyboard:60:5:v1" })); // 旧入力規則は除外
     expect(sprintTarget(profile, "keyboard", "short")).toBe(Math.round(240 * 1.08));
     expect(sprintTarget(profile, "keyboard", "paragraph")).toBe(Math.round(600 * 1.08));
     expect(sprintTarget(profile, "touch", "short")).toBe(0);

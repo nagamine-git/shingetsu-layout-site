@@ -19,6 +19,7 @@ const browserPath =
 if (!browserPath) { console.error("Chromium が見つかりません。E2E_BROWSER=<path> を指定してください。"); process.exit(1); }
 
 const dev = spawn("pnpm", ["dev", "--port", String(port)], { stdio: "ignore", detached: true });
+dev.on("error", (error) => { console.error(`開発サーバーを起動できません: ${error.message}`); process.exit(1); });
 const stop = () => { try { process.kill(-dev.pid, "SIGTERM"); } catch { /* already gone */ } };
 process.on("exit", stop);
 for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -89,7 +90,8 @@ try {
   check(result.history.includes("弱点ドリル"), "ドリル: 履歴に保存される");
   await lab.click("#lab-rest-skip").catch(() => {});
 
-  // 3. 疾走
+  // 3. 疾走（手動メニューは details 内）
+  await lab.click("#lab-manual summary");
   await lab.click('.lab-modes [data-mode="speed"]');
   await lab.selectOption("#lab-duration", "15");
   await lab.waitForTimeout(200);
@@ -97,6 +99,20 @@ try {
   check(pace.includes("216"), `疾走: 目標が自己ベスト+8% (${pace})`);
   const heat = await lab.locator('#lab-heat-map span[data-heat="measured"]').count();
   check(heat >= 1, `速度マップ: 計測済みキーを表示 (${heat}キー)`);
+
+  // 4. 練習する（自動）と 測る
+  await lab.click("#lab-auto");
+  await lab.waitForTimeout(400);
+  const autoState = await lab.evaluate(() => ({ state: document.getElementById("training-lab").dataset.state, label: document.getElementById("lab-session-label").textContent, title: document.getElementById("lab-plan-title").textContent }));
+  check(autoState.state === "running" && autoState.label.startsWith("自動"), `自動メニュー: 1 タップで開始 (${autoState.title})`);
+  const stopRun = () => lab.evaluate(() => { for (const id of ["lab-pause", "lab-abandon", "lab-rest-skip"]) { const button = document.getElementById(id); if (button && !button.hidden && !button.disabled) button.click(); } });
+  await stopRun();
+  await lab.waitForTimeout(400);
+  await lab.click("#lab-measure");
+  await lab.waitForTimeout(400);
+  const measureState = await lab.evaluate(() => ({ state: document.getElementById("training-lab").dataset.state, mode: document.getElementById("training-lab").dataset.mode }));
+  check(measureState.state === "running" && measureState.mode === "benchmark", "測る: 固定文の定点測定が始まる");
+  await stopRun();
 
   check(errors.length === 0, `JS エラーなし${errors.length ? `: ${errors.join(" | ")}` : ""}`);
 } finally {
