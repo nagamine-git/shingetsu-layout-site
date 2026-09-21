@@ -1,7 +1,10 @@
 ---
+import FeatureDiagram from "./FeatureDiagram.astro";
+
 const features = [
   {
     icon: "⌨️",
+    diagram: "keys",
     title: "30キー完結",
     badge: "コンパクト",
     description:
@@ -11,6 +14,7 @@ const features = [
   },
   {
     icon: "⚡",
+    diagram: "stroke",
     title: "頻度ベースの打鍵数",
     badge: "前置シフト",
     description:
@@ -20,6 +24,7 @@ const features = [
   },
   {
     icon: "🧩",
+    diagram: "layers",
     title: "3層構造設計",
     badge: "柔軟",
     description:
@@ -27,7 +32,7 @@ const features = [
     stat: "3",
     statLabel: "レイヤー構成",
   },
-];
+] as const;
 ---
 
 <section id="features" class="content-section feature-section">
@@ -51,6 +56,8 @@ const features = [
               {f.badge}
             </span>
           </div>
+
+          <FeatureDiagram kind={f.diagram} uniqueId={`feature-${f.diagram}`} />
 
           <h3 class="text-xl font-bold text-white mb-2">{f.title}</h3>
           <p class="text-slate-400 text-sm leading-relaxed mb-6">{f.description}</p>

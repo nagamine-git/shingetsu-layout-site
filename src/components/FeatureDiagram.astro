@@ -1,0 +1,61 @@
+---
+import layoutData from "../data/layout.json";
+
+interface Props {
+  kind: "keys" | "stroke" | "layers";
+  uniqueId: string;
+}
+const { kind, uniqueId } = Astro.props;
+const material = `${uniqueId}-material`;
+const highlight = `${uniqueId}-highlight`;
+const keys = Array.from({ length: 30 }, (_, index) => ({
+  column: index % 10,
+  row: Math.floor(index / 10),
+}));
+---
+
+<svg class="feature-diagram" viewBox="0 0 600 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id={material} x1="0" y1="0" x2=".6" y2="1">
+      <stop stop-color="#40464b" />
+      <stop offset="1" stop-color="#171d21" />
+    </linearGradient>
+    <linearGradient id={highlight} x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#9cb9ca" />
+      <stop offset="1" stop-color="#4b718a" />
+    </linearGradient>
+  </defs>
+  {kind === "keys" && (
+    <g transform="translate(29 84)">
+      <path d="M0 194H542" stroke="#b4afa6" />
+      {keys.map(({ row, column }) => (
+        <g transform={`translate(${column * 53 + row * 5} ${row * 57})`}>
+          <rect x="1" y="5" width="45" height="48" rx="7" fill="#101417" opacity=".6" />
+          <rect width="46" height="48" rx="7" fill={`url(#${row === 1 && layoutData.homeRow.includes(column) ? highlight : material})`} stroke="#707c84" stroke-width=".7" />
+          <path d="M9 5H37" stroke="#dce7ef" opacity=".22" />
+          {row === 1 && layoutData.homeRow.includes(column) && <path d="M18 39H28" stroke="#e7f3fc" stroke-width="1.5" />}
+        </g>
+      ))}
+    </g>
+  )}
+  {kind === "stroke" && (
+    <g>
+      <path d="M190 189H410" stroke="#91989a" stroke-width="1" />
+      <path d="M295 183L301 189L295 195" fill="none" stroke="#4b718a" stroke-width="2" />
+      <rect x="56" y="125" width="132" height="132" rx="22" fill="#111719" opacity=".45" />
+      <rect x="56" y="115" width="132" height="132" rx="22" fill={`url(#${material})`} stroke="#626e76" />
+      <path d="M78 125H166" stroke="#a9bdc9" opacity=".3" />
+      <text x="122" y="202" text-anchor="middle" fill="#f2f0e9" font-size="58" font-family="var(--font-editorial)">か</text>
+      <text x="465" y="221" text-anchor="middle" fill="#252b2e" font-size="100" font-family="var(--font-editorial)">か</text>
+      <path d="M50 284H550" stroke="#b4afa6" />
+    </g>
+  )}
+  {kind === "layers" && [2, 1, 0].map((layer) => (
+    <g transform={`translate(${58 + (2 - layer) * 14} ${80 + layer * 69}) skewX(-16) scale(.84 .65)`}>
+      <rect x="-14" y="-14" width="538" height="142" rx="15" fill={layer === 0 ? "#4b6475" : "#343c41"} stroke="#9faeb7" stroke-width="1" />
+      {keys.map(({ row, column }) => (
+        <rect x={column * 51} y={row * 38} width="43" height="30" rx="4" fill={`url(#${layer === 0 && row === 1 ? highlight : material})`} stroke="#8a969e" stroke-width=".7" />
+      ))}
+    </g>
+  ))}
+</svg>

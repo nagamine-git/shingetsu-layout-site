@@ -31,9 +31,11 @@ if ("IntersectionObserver" in window && "animate" in Element.prototype) {
       const sequence = sequences.get(element.parentElement) ?? 0;
       sequences.set(element.parentElement, sequence + 1);
       try {
+        const panel = landingPage && element.matches(".instrument-panel, .typing-instrument, .hero-instrument, .practice-console");
+        const feature = landingPage && element.matches(".feature-card");
         const animation = element.animate(
-          [{ opacity: 0, transform: "translateY(22px)" }, { opacity: 1, transform: "translateY(0)" }],
-          { duration: 1000, delay: Math.min(sequence * 100, 300), easing: "cubic-bezier(.25,.1,.25,1)", fill: "backwards" },
+          [{ opacity: 0, transform: panel ? "translateY(36px) scale(.975)" : feature ? "translateY(32px)" : "translateY(22px)" }, { opacity: 1, transform: "translateY(0) scale(1)" }],
+          { duration: panel ? 1200 : 1000, delay: Math.min(sequence * (feature ? 140 : 100), 300), easing: "cubic-bezier(.16,1,.3,1)", fill: "backwards" },
         );
         activeReveals.set(element, animation);
         animation.onfinish = (): void => { activeReveals.delete(element); };
