@@ -1,6 +1,10 @@
 import { benchmarkCorpus, curriculum, type Passage } from "../data/trainingCorpus";
 import { codeToKey, comparableResults, fingerHint, freshProfile, keyLegend, mastery, median, priority, readProfile, rhythm, saveSession, selectPassages, suggestedStage, trainingStorageKey, TrainingRun, type TrainingMaterial, type TrainingMethod, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
 import { isLongMarkInput, matchesTrainingCharacter } from "./longMark";
+import { TrainingAudio, type BgmPreset, type KeySound } from "./trainingAudio";
+import { progressMilestones } from "./trainingProgress";
+import { TrainingProgressView } from "./trainingProgressView";
+import type { TrainingSoundRecord } from "./training";
 
 function element<ElementType extends HTMLElement = HTMLElement>(id: string): ElementType {
   const found = document.getElementById(id);
@@ -44,6 +48,47 @@ let imeCorrect = 0;
 let imeTotal = 0;
 let restUntil = 0;
 let lastHintRender = "";
+let sessionSound: TrainingSoundRecord | undefined;
+let previewTimer: ReturnType<typeof setTimeout> | undefined;
+let previewGeneration = 0;
+const sound = new TrainingAudio((message): void => {
+  const messages: Record<string, string> = { enabled: "音を有効にしました。", muted: "消音中", suspended: "音を一時停止中。再開時に有効化してください。", unsupported: "音声再生に未対応です。無音で練習できます。", blocked: "音を再生できませんでした。もう一度有効化してください。", failed: "音を停止しました。練習は無音で続けられます。", "storage-unavailable": "音の設定を保存できません。この画面では利用できます。" };
+  element("lab-sound-status").textContent = messages[message] ?? "音の状態が変わりました。";
+  renderSound();
+  trackSound();
+});
+const progressView = new TrainingProgressView(() => ({ profile, method: effectiveMethod(), signature: signature() }));
+
+function renderSound(): void {
+  element("lab-sound-label").textContent = sound.enabled ? "ON" : "OFF";
+  element("lab-sound-toggle").textContent = sound.enabled ? "消音する" : "音を有効にする";
+  element("lab-sound-toggle").setAttribute("aria-pressed", String(sound.enabled));
+  element<HTMLSelectElement>("lab-bgm").value = sound.settings.bgm;
+  element<HTMLSelectElement>("lab-se").value = sound.settings.se;
+  for (const [id, value] of [["bgm", sound.settings.bgmVolume], ["se", sound.settings.seVolume]] as const) {
+    element<HTMLInputElement>(`lab-${id}-volume`).value = String(Math.round(value * 100));
+    element(`lab-${id}-value`).textContent = `${Math.round(value * 100)}%`;
+  }
+}
+
+function cancelPreview(): void {
+  previewGeneration += 1;
+  clearTimeout(previewTimer);
+}
+
+function trackSound(): void {
+  if (!sessionSound || (state !== "running" && state !== "paused")) return;
+  const snapshot = sound.snapshot();
+  sessionSound.changed ||= JSON.stringify(sessionSound.end) !== JSON.stringify(snapshot);
+  sessionSound.end = snapshot;
+}
+
+function captureSound(): void {
+  if (!sessionSound || !run.started) {
+    const snapshot = sound.snapshot();
+    sessionSound = { start: snapshot, end: snapshot, changed: false };
+  } else trackSound();
+}
 
 methodSelect.value = matchMedia("(pointer: coarse)").matches ? "touch" : "keyboard";
 if (mode === "focus") hintsSelect.value = "off";
@@ -72,6 +117,7 @@ function persist(): void {
 
 function lockSettings(locked: boolean): void {
   for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect, geometrySelect, ...modeButtons]) control.disabled = locked;
+  element<HTMLButtonElement>("lab-quest-start").disabled = locked;
   element<HTMLButtonElement>("lab-reset").disabled = locked;
   element<HTMLInputElement>("lab-import").disabled = locked;
   element<HTMLButtonElement>("lab-target-review").disabled = locked;
@@ -108,6 +154,7 @@ function renderHistory(): void {
     const row = document.createElement("tr");
     const conditions = [result.interrupted ? "中断" : "完了", result.assisted ? "ガイドあり" : "ガイドなし", `${Math.round(result.duration)}秒`];
     if (result.method !== "touch") conditions.push(result.signature.endsWith(":longmark-v1") ? "長音互換" : "旧入力規則");
+    conditions.push(!result.sound ? "音：旧記録・不明" : result.sound.changed ? "音：途中変更あり" : result.sound.start.failed ? "音：再生不可" : result.sound.start.enabled ? `音：${result.sound.start.bgm} / ${result.sound.start.se}` : "音：OFF");
     for (const text of [new Date(result.date).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }), `${names[result.mode]}${result.material === "paragraph" ? " / 文章" : ""} / ${methodNames[result.method]}`, `${Math.round(result.cpm)} ${result.method === "ime" ? "字" : "かな"}/分`, `${result.accuracy.toFixed(1)}%`, conditions.join(" · ")]) {
       const cell = document.createElement("td");
       cell.textContent = text;
@@ -139,6 +186,7 @@ function renderHistory(): void {
   element("lab-due").textContent = mode === "ime" ? "IME実践はかなの習熟判定に含めません。" : due ? `${due}文字が復習の時期。復習モードで思い出しましょう。` : "復習の期限は、練習を重ねるとここに表示します。";
   element("lab-storage-message").textContent = storageAvailable ? "成績はこのブラウザだけに保存。端末間の移動にはバックアップを使えます。" : "この環境では保存できません。練習は使えますが、閉じる前に記録を書き出してください。";
   renderDaily();
+  progressView.render();
 }
 
 function hintsVisible(): boolean {
@@ -247,6 +295,10 @@ function renderMetrics(): void {
 function passages(): Passage[] { return selectPassages(profile, method(), mode, level(), Date.now(), Math.random, focus, material()); }
 
 function prepare(retryPassages?: Passage[]): void {
+  cancelPreview();
+  sound.setActive(false);
+  sessionSound = undefined;
+  delete element("lab-result").dataset.celebrate;
   clearInterval(timer);
   clearInterval(restTimer);
   state = "ready";
@@ -317,6 +369,10 @@ function start(): void {
   if (state === "done") prepare();
   if (state !== "ready") return;
   state = "running";
+  cancelPreview();
+  element<HTMLDetailsElement>("lab-sound-panel").open = false;
+  sound.setActive(true);
+  if (sound.enabled) void sound.enable();
   closeFocusSettings();
   app.dataset.state = state;
   tokenEnteredAt = performance.now();
@@ -348,9 +404,11 @@ function tick(): void {
 
 function pause(): void {
   if (state !== "running") return;
+  cancelPreview();
   if (timed()) { finish(true); return; }
   run.pause(performance.now());
   state = "paused";
+  sound.setActive(false);
   app.dataset.state = state;
   pauseButton.textContent = "練習を再開";
   status("一時停止中。再開ボタンで戻れます。休んだ時間は計測しません。");
@@ -362,6 +420,8 @@ function resume(): void {
   run.resume(performance.now());
   tokenEnteredAt = performance.now();
   state = "running";
+  sound.setActive(true);
+  if (sound.enabled) void sound.enable();
   app.dataset.state = state;
   pauseButton.textContent = "一時停止";
   status("練習を再開しました。");
@@ -381,7 +441,9 @@ function feed(key: string): void {
   const previousPassage = run.passageIndex;
   const wasError = app.dataset.error === "true";
   const before = `${run.passageIndex}:${run.tokenIndex}`;
+  captureSound();
   const correct = run.press(key, now);
+  sound.key(correct);
   app.dataset.error = String(!correct);
   if (!correct) {
     status(mode === "benchmark" || hintsSelect.value === "off" ? "違うキーです。現在のかなから続けてください。" : `違うキーです。次は ${run.nextKeys.map((entry): string => entry.toUpperCase()).join(" または ")}。`);
@@ -443,6 +505,10 @@ function drawChart(): void {
 
 function finish(interrupted: boolean, now = performance.now(), showResult = true): void {
   if (state !== "running" && state !== "paused") return;
+  cancelPreview();
+  trackSound();
+  const resultSound = sessionSound;
+  sound.setActive(false);
   clearInterval(timer);
   run.interrupted ||= interrupted;
   run.sampleTrace(now);
@@ -461,12 +527,24 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
   const seconds = run.elapsed(now) / 1000;
   if (!run.started || seconds < .001) { prepare(); status("入力前に終了しました。記録は保存していません。"); return; }
   const result: TrainingResult = { date: new Date().toISOString(), mode, method: effectiveMethod(), material: material(), duration: seconds, stage: level(), cpm: run.cpm(now), accuracy: mode === "ime" ? (imeTotal ? imeCorrect / imeTotal * 100 : 0) : run.accuracy, kana: run.completed, attempts: mode === "ime" ? imeTotal : run.attempts, errors: mode === "ime" ? imeTotal - imeCorrect : run.errors, interrupted: run.interrupted, assisted: run.assisted, signature: signature() };
+  result.sound = resultSound;
+  const priorMilestones = new Set(progressMilestones(profile.results.filter((entry): boolean => entry.method === result.method)).filter((milestone): boolean => milestone.earned).map((milestone): string => milestone.id));
   const previous = comparableResults(profile, result.signature);
   const previousBest = Math.max(0, ...previous.map((entry): number => entry.cpm));
   saveSession(profile, result, run.assessmentSamples, run.pairs, run.passages.slice(0, run.passageIndex + (material() === "paragraph" ? 1 : 0)).map((passage): string => passage.id));
   persist();
   if (!showResult) return;
   const comparable = comparableResults(profile, result.signature).includes(result);
+  const newMilestones = progressMilestones(profile.results.filter((entry): boolean => entry.method === result.method)).filter((milestone): boolean => milestone.earned && !priorMilestones.has(milestone.id));
+  const milestoneMessage = element("lab-result-milestone");
+  milestoneMessage.hidden = !newMilestones.length;
+  milestoneMessage.textContent = newMilestones.length ? `新しいしるし：${newMilestones.map((milestone): string => milestone.title).join(" / ")}` : "";
+  const recent = previous.slice(-5);
+  const difference = result.cpm - median(recent.map((entry): number => entry.cpm));
+  element("lab-result-growth").textContent = comparable && recent.length >= 5 ? `前の同条件5回の中央値より ${difference >= 0 ? "+" : ""}${Math.round(difference)}${mode === "ime" ? "字" : "かな"}/分。音条件は混在。積み重ねは成長グラフで。` : comparable ? `比較できる記録が${previous.length + 1}回に。5回揃うと、いつものペースが見えてきます。` : "この結果も履歴に残ります。自己ベストの比較には、ガイドなし・正確率95%以上などの条件があります。";
+  const celebrate = !interrupted && (newMilestones.length > 0 || (comparable && previous.length > 0 && result.cpm > previousBest));
+  element("lab-result").dataset.celebrate = String(celebrate);
+  if (celebrate && !document.hidden) sound.celebrate();
   element("lab-result-tag").textContent = interrupted ? "中断 · 参考記録" : comparable && result.cpm > previousBest ? "同条件での自己ベスト" : result.assisted ? "ガイドあり · 学習記録" : comparable ? "比較可能な記録" : "参考記録";
   element("lab-result-summary").textContent = `${Math.round(result.cpm)} ${mode === "ime" ? "変換後の文字" : "かな"}/分 · ${mode === "ime" ? "一致率" : "打鍵正確率"} ${result.accuracy.toFixed(1)}% · ${result.kana}文字 · ${Math.round(seconds)}秒。${method() === "touch" && mode !== "ime" ? "タップの記録です。PC速度とは比較しません。" : ""}`;
   element("lab-result-title").textContent = interrupted ? "ここで、ひと区切り。" : "一歩、指に馴染んだ。";
@@ -533,6 +611,7 @@ function processIme(): void {
   if (state !== "running" || mode !== "ime" || composing) return;
   const value = imeInput.value.normalize("NFC");
   if (value === imeValue) return;
+  captureSound();
   run.start(performance.now());
   if (run.elapsed(performance.now()) >= 60_000) { tick(); return; }
   imeValue = value;
@@ -544,6 +623,7 @@ function processIme(): void {
   imeTotal = imeFinished + characters.length;
   run.completed = imeCorrect;
   app.dataset.error = String(prefix < characters.length);
+  sound.key(prefix === characters.length);
   if (prefix < characters.length) status(`${prefix + 1}文字目が一致しません。変換やBackspaceで修正してください。`);
   if (prefix === target.length && characters.length === target.length) {
     imeFinished += target.length;
@@ -556,6 +636,64 @@ function processIme(): void {
   }
   renderMetrics();
 }
+
+element("lab-sound-toggle").addEventListener("click", async (): Promise<void> => {
+  cancelPreview();
+  if (sound.enabled) sound.mute();
+  else {
+    await sound.enable();
+    sound.setActive(state === "running");
+    if (sound.settings.bgm === "off" && sound.settings.se === "off") element("lab-sound-status").textContent = "音のアトリエでBGM・打鍵音を選んでください。";
+  }
+  trackSound();
+  renderSound();
+  if (state === "running") (mode === "ime" ? imeInput : stage).focus({ preventScroll: true });
+});
+element<HTMLSelectElement>("lab-bgm").addEventListener("change", (event): void => {
+  sound.configure({ bgm: (event.target as HTMLSelectElement).value as BgmPreset });
+  trackSound();
+  renderSound();
+});
+element<HTMLSelectElement>("lab-se").addEventListener("change", (event): void => {
+  sound.configure({ se: (event.target as HTMLSelectElement).value as KeySound });
+  trackSound();
+  renderSound();
+});
+for (const id of ["bgm", "se"] as const) element<HTMLInputElement>(`lab-${id}-volume`).addEventListener("input", (event): void => {
+  const volume = Number((event.target as HTMLInputElement).value) / 100;
+  sound.configure(id === "bgm" ? { bgmVolume: volume } : { seVolume: volume });
+  trackSound();
+  renderSound();
+});
+element("lab-sound-preview").addEventListener("click", async (): Promise<void> => {
+  cancelPreview();
+  const generation = previewGeneration;
+  if (!await sound.enable() || generation !== previewGeneration) return;
+  sound.setActive(true);
+  sound.key(true);
+  trackSound();
+  renderSound();
+  previewTimer = setTimeout((): void => sound.setActive(state === "running"), 3000);
+});
+element("lab-quest-start").addEventListener("click", (): void => {
+  if (state === "running" || state === "paused") return;
+  if (mode !== "ime") mode = "review";
+  focus = "";
+  hintsSelect.value = "auto";
+  prepare();
+  start();
+});
+document.addEventListener("pointerdown", (event): void => {
+  if (event.target instanceof Element && !event.target.closest(".lab-soundbar")) element<HTMLDetailsElement>("lab-sound-panel").open = false;
+});
+element("lab-sound-panel").addEventListener("keydown", (event): void => {
+  if (event.key !== "Escape") return;
+  event.preventDefault();
+  element<HTMLDetailsElement>("lab-sound-panel").open = false;
+  element("lab-sound-panel").querySelector("summary")?.focus();
+});
+window.addEventListener("pagehide", (): void => { cancelPreview(); sound.mute(); });
+renderSound();
 
 startButton.addEventListener("click", start);
 element("lab-retry").addEventListener("click", retry);
@@ -662,6 +800,7 @@ for (const key of keys) {
 imeInput.addEventListener("compositionstart", (): void => {
   if (state !== "running") return;
   composing = true;
+  captureSound();
   run.start(performance.now());
 });
 imeInput.addEventListener("compositionend", (): void => { composing = false; queueMicrotask(processIme); });
@@ -674,12 +813,12 @@ imeInput.addEventListener("beforeinput", (event): void => {
 for (const input of [stage, imeInput, element("lab-prompt")]) input.addEventListener("blur", (event): void => {
   const next = event.relatedTarget;
   if (material() === "paragraph" && (next === stage || next === element("lab-prompt"))) return;
-  if (next instanceof Element && (next.closest(".lab-key") || ["lab-pause", "lab-abandon", "lab-show-hint", "lab-focus-exit"].includes(next.id))) return;
+  if (next instanceof Element && (next.closest(".lab-key, .lab-soundbar") || ["lab-pause", "lab-abandon", "lab-show-hint", "lab-focus-exit"].includes(next.id))) return;
   if (state === "running") pause();
 });
 window.addEventListener("blur", (): void => { if (state === "running") pause(); });
 window.addEventListener("resize", keepPromptCursorVisible);
-document.addEventListener("visibilitychange", (): void => { if (document.hidden && state === "running") pause(); });
+document.addEventListener("visibilitychange", (): void => { if (document.hidden) { cancelPreview(); if (state === "running") pause(); } });
 
 element("lab-export").addEventListener("click", (): void => {
   const blob = new Blob([JSON.stringify(profile, null, 2)], { type: "application/json" });

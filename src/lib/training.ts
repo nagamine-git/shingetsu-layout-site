@@ -16,6 +16,15 @@ export interface Skill {
   streak: number;
 }
 export interface PairSkill { samples: number; milliseconds: number; }
+export interface TrainingSoundState {
+  bgm: "off" | "eclipse" | "still" | "orbit";
+  se: "off" | "felt" | "tactile" | "glass";
+  bgmVolume: number;
+  seVolume: number;
+  enabled: boolean;
+  failed: boolean;
+}
+export interface TrainingSoundRecord { start: TrainingSoundState; end: TrainingSoundState; changed: boolean; }
 export interface TrainingResult {
   date: string;
   mode: TrainingMode;
@@ -31,6 +40,7 @@ export interface TrainingResult {
   interrupted: boolean;
   assisted: boolean;
   signature: string;
+  sound?: TrainingSoundRecord;
 }
 export interface TrainingProfile {
   version: 1;
@@ -98,6 +108,19 @@ function number(value: unknown, maximum = 1_000_000_000_000_000): value is numbe
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= maximum;
 }
 
+function soundState(value: unknown): TrainingSoundState | undefined {
+  if (!record(value) || !["off", "eclipse", "still", "orbit"].includes(String(value.bgm)) || !["off", "felt", "tactile", "glass"].includes(String(value.se))) return;
+  if (!number(value.bgmVolume, 1) || !number(value.seVolume, 1) || typeof value.enabled !== "boolean" || typeof value.failed !== "boolean") return;
+  return { bgm: value.bgm as TrainingSoundState["bgm"], se: value.se as TrainingSoundState["se"], bgmVolume: value.bgmVolume, seVolume: value.seVolume, enabled: value.enabled, failed: value.failed };
+}
+
+function soundRecord(value: unknown): TrainingSoundRecord | undefined {
+  if (!record(value) || typeof value.changed !== "boolean") return;
+  const start = soundState(value.start);
+  const end = soundState(value.end);
+  return start && end ? { start, end, changed: value.changed } : undefined;
+}
+
 const skillNames = new Set([...trainingCorpus, ...benchmarkCorpus].flatMap((passage): string[] =>
   tokenize(passage.reading).flatMap((token): string[] => [token.text, ...Array.from(token.text)])));
 
@@ -135,7 +158,7 @@ export function readProfile(raw: string | null): TrainingProfile {
         if (!number(entry.kana, 100_000) || !number(entry.attempts, 1e7) || !number(entry.errors, entry.attempts)) continue;
         if (typeof entry.interrupted !== "boolean" || typeof entry.assisted !== "boolean" || typeof entry.signature !== "string" || entry.signature.length > 100) continue;
         if (entry.material !== undefined && entry.material !== "short" && entry.material !== "paragraph") continue;
-        profile.results.push({ date: entry.date, mode: entry.mode as TrainingMode, method: entry.method as TrainingMethod, material: entry.material ?? "short", duration: entry.duration, stage: entry.stage, cpm: entry.cpm, accuracy: entry.accuracy, kana: entry.kana, attempts: entry.attempts, errors: entry.errors, interrupted: entry.interrupted, assisted: entry.assisted, signature: entry.signature });
+        profile.results.push({ date: entry.date, mode: entry.mode as TrainingMode, method: entry.method as TrainingMethod, material: entry.material ?? "short", duration: entry.duration, stage: entry.stage, cpm: entry.cpm, accuracy: entry.accuracy, kana: entry.kana, attempts: entry.attempts, errors: entry.errors, interrupted: entry.interrupted, assisted: entry.assisted, signature: entry.signature, sound: soundRecord(entry.sound) });
       }
     }
     if (Array.isArray(parsed.recent)) profile.recent = parsed.recent.filter((value): value is string => typeof value === "string" && (trainingCorpus.some((passage): boolean => passage.id === value) || trainingParagraphs.some((passage): boolean => passage.id === value))).slice(-30);
