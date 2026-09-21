@@ -1,4 +1,6 @@
 ---
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { getCollection, render } from "astro:content";
 import Base from "../../layouts/Base.astro";
 import ShareButtons from "../../components/ShareButtons.astro";
@@ -16,6 +18,20 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 
 const postUrl = new URL(`/blog/${post.id}/`, Astro.site).toString();
+// 記事ごとの OGP 画像（scripts/og-images.mjs で生成）。未生成ならトップの画像で代用する。
+const ogImage = existsSync(path.join(process.cwd(), "public/og/blog", `${post.id}.png`))
+  ? `/og/blog/${post.id}.png`
+  : "/og/home.png";
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "新月配列", item: "https://shingetsu-layout.com/" },
+    { "@type": "ListItem", position: 2, name: "読みもの", item: "https://shingetsu-layout.com/blog/" },
+    { "@type": "ListItem", position: 3, name: post.data.title, item: postUrl },
+  ],
+};
 
 const blogPostingJsonLd = {
   "@context": "https://schema.org",
@@ -42,13 +58,14 @@ const blogPostingJsonLd = {
   },
   inLanguage: "ja",
   keywords: post.data.tags.join(", "),
+  image: new URL(ogImage, Astro.site).toString(),
 };
 ---
 
 
-<Base title={`${post.data.title} — 新月配列`} description={post.data.description}>
+<Base title={`${post.data.title} — 新月配列`} description={post.data.description} ogImage={ogImage} ogImageAlt={`${post.data.title} — 新月配列 読みもの`}>
+  <Fragment slot="og-type"><meta property="og:type" content="article" /></Fragment>
   <Fragment slot="head">
-    <meta property="og:type" content="article" />
     <meta property="article:published_time" content={post.data.publishedAt.toISOString()} />
     {post.data.updatedAt && (
       <meta property="article:modified_time" content={post.data.updatedAt.toISOString()} />
@@ -57,6 +74,7 @@ const blogPostingJsonLd = {
       <meta property="article:tag" content={tag} />
     ))}
     <script type="application/ld+json" set:html={JSON.stringify(blogPostingJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
   </Fragment>
 
   <article class="pt-28 pb-24 px-4 max-w-3xl mx-auto">
