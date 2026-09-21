@@ -1,5 +1,6 @@
 import { benchmarkCorpus, curriculum, type Passage } from "../data/trainingCorpus";
 import { codeToKey, comparableResults, fingerHint, freshProfile, keyLegend, mastery, median, priority, readProfile, rhythm, saveSession, selectPassages, suggestedStage, trainingStorageKey, TrainingRun, type TrainingMaterial, type TrainingMethod, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
+import { isLongMarkInput, matchesTrainingCharacter } from "./longMark";
 
 function element<ElementType extends HTMLElement = HTMLElement>(id: string): ElementType {
   const found = document.getElementById(id);
@@ -54,7 +55,7 @@ function timed(): boolean { return mode === "speed" || mode === "benchmark" || m
 function duration(): number { return mode === "speed" || mode === "focus" ? Number(durationSelect.value) : timed() ? 60 : 0; }
 function level(): number { return timed() ? 5 : levelSelect.value === "auto" ? suggestedStage(profile[method()]) : Number(levelSelect.value); }
 function material(): TrainingMaterial { return (mode === "focus" || mode === "speed") && materialSelect.value === "paragraph" ? "paragraph" : "short"; }
-function signature(): string { return `${mode}:${effectiveMethod()}:${duration()}:${level()}:${material() === "paragraph" ? "paragraph:" : ""}v1`; }
+function signature(): string { return `${mode}:${effectiveMethod()}:${duration()}:${level()}:${material() === "paragraph" ? "paragraph:" : ""}v1${effectiveMethod() === "touch" ? "" : ":longmark-v1"}`; }
 function status(message: string, quiet = false): void {
   element("lab-status").textContent = message;
   app.dataset.quietStatus = String(quiet);
@@ -106,6 +107,7 @@ function renderHistory(): void {
   for (const result of results.slice(-8).reverse()) {
     const row = document.createElement("tr");
     const conditions = [result.interrupted ? "中断" : "完了", result.assisted ? "ガイドあり" : "ガイドなし", `${Math.round(result.duration)}秒`];
+    if (result.method !== "touch") conditions.push(result.signature.endsWith(":longmark-v1") ? "長音互換" : "旧入力規則");
     for (const text of [new Date(result.date).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }), `${names[result.mode]}${result.material === "paragraph" ? " / 文章" : ""} / ${methodNames[result.method]}`, `${Math.round(result.cpm)} ${result.method === "ime" ? "字" : "かな"}/分`, `${result.accuracy.toFixed(1)}%`, conditions.join(" · ")]) {
       const cell = document.createElement("td");
       cell.textContent = text;
@@ -301,7 +303,7 @@ function prepare(retryPassages?: Passage[]): void {
   element("lab-accuracy-label").textContent = mode === "ime" ? "確定文の一致率" : "打鍵正確率";
   element("lab-errors-label").textContent = mode === "ime" ? "不一致文字" : "ミス打鍵";
   element("lab-focus").textContent = focus ? `「${focus}」を含む、別の文脈で復習。` : mode === "review" ? "覚えているか、ガイドなしで一度試そう。" : mode === "ime" ? "修正も変換も含めた、実際の入力速度。" : "速さより、迷わず正確に。";
-  element("lab-input-help").textContent = mode === "ime" ? "新月配列と日本語IMEをオンに。漢字・句読点まで一致すると次の文へ。予測変換・貼り付けは使いません。" : method() === "touch" ? "画面のキーを順番にタップ。スマホで配置を覚える練習です。PCの記録とは別に保存します。" : "IMEとOS側の新月配列リマップはオフに。英数・QWERTY状態で、D/Kも順番に押します。";
+  element("lab-input-help").textContent = mode === "ime" ? "新月配列と日本語IMEをオンに。お題の「ー」はハイフン系表記でも可。文が一致すると次へ。予測変換・貼り付けは使いません。" : method() === "touch" ? "画面のキーを順番にタップ。スマホで配置を覚える練習です。PCの記録とは別に保存します。" : "IMEとOS側の新月配列リマップはオフに。英数・QWERTY状態で、D/Kも順番に押します。長音「ー」はD→P、またはハイフンキーでも入力できます。";
   const comparison = comparableResults(profile, signature()).slice(-5);
   pace = comparison.length >= 3 ? Math.round(median(comparison.map((result): number => result.cpm)) * 1.03) : 0;
   status(mode === "focus" ? "最初の打鍵から計測。時間が来たら結果を確認し、Enterで次の一本へ。" : "開始すると、最初の入力から計測します。");
@@ -534,16 +536,16 @@ function processIme(): void {
   run.start(performance.now());
   if (run.elapsed(performance.now()) >= 60_000) { tick(); return; }
   imeValue = value;
-  const target = Array.from(run.passage.text);
+  const target = Array.from(run.passage.text.normalize("NFC"));
   const characters = Array.from(value);
   let prefix = 0;
-  while (prefix < characters.length && characters[prefix] === target[prefix]) prefix += 1;
+  while (prefix < characters.length && prefix < target.length && matchesTrainingCharacter(characters[prefix], target[prefix])) prefix += 1;
   imeCorrect = imeFinished + prefix;
   imeTotal = imeFinished + characters.length;
   run.completed = imeCorrect;
   app.dataset.error = String(prefix < characters.length);
   if (prefix < characters.length) status(`${prefix + 1}文字目が一致しません。変換やBackspaceで修正してください。`);
-  if (value === run.passage.text) {
+  if (prefix === target.length && characters.length === target.length) {
     imeFinished += target.length;
     extend();
     run.passageIndex += 1;
@@ -637,7 +639,7 @@ stage.addEventListener("keydown", (event): void => {
     return;
   }
   if (event.key === "Tab") return;
-  if (event.isComposing || event.key === "Process" || event.key === "Dead" || /[^\x00-\x7f]/.test(event.key)) {
+  if (event.isComposing || event.keyCode === 229 || event.key === "Process" || event.key === "Dead" || (/[^\x00-\x7f]/.test(event.key) && !isLongMarkInput(event.key))) {
     status("シミュレーターではIMEとOSのキー変換をオフにしてください。導入済みIMEで打つ場合は「IME実践」へ。");
     return;
   }
@@ -646,7 +648,7 @@ stage.addEventListener("keydown", (event): void => {
     status("確定・削除は不要です。現在のかなから続けてください。");
     return;
   }
-  const key = codeToKey(event.code) ?? (event.key.length === 1 ? event.key.toLowerCase() : undefined);
+  const key = isLongMarkInput(event.key) ? "-" : codeToKey(event.code) ?? (event.key.length === 1 ? event.key.toLowerCase() : undefined);
   if (key) { event.preventDefault(); feed(key); }
 });
 for (const key of keys) {

@@ -1,6 +1,7 @@
 import romanData from "../data/romantable.json";
 import { benchmarkCorpus, curriculum, trainingCorpus, type Passage } from "../data/trainingCorpus";
 import { trainingParagraphs } from "../data/trainingParagraphs";
+import { isLongMarkInput } from "./longMark";
 
 export type TrainingMode = "learn" | "review" | "speed" | "benchmark" | "ime" | "focus";
 export type TrainingMethod = "keyboard" | "touch" | "ime";
@@ -79,7 +80,7 @@ export function tokenize(reading: string): TrainingToken[] {
     const match = mappings.find(([, kana]): boolean => remaining.startsWith(kana));
     if (!match) throw new Error(`Unsupported training text: ${remaining}`);
     const text = match[1];
-    result.push({ text, paths: encodings(text) });
+    result.push({ text, paths: text === "ー" ? [...encodings(text), "-"] : encodings(text) });
     remaining = remaining.slice(text.length);
   }
   return result;
@@ -306,6 +307,7 @@ export class TrainingRun {
     this.start(now);
     const token = this.token;
     if (!token) return false;
+    if (token.text === "ー" && isLongMarkInput(key)) key = "-";
     this.attempts += 1;
     const candidate = this.buffer + key;
     if (!token.paths.some((sequence): boolean => sequence.startsWith(candidate))) {
@@ -318,7 +320,8 @@ export class TrainingRun {
       const interval = now - this.previousAt;
       if (interval > 0 && interval <= 10_000) {
         this.intervals.push(interval);
-        this.pairs.push({ pair: this.previousKey + key, milliseconds: interval });
+        const pair = this.previousKey + key;
+        if (/^[a-z;,./\[\]]{2}$/.test(pair)) this.pairs.push({ pair, milliseconds: interval });
       }
     }
     this.previousAt = now;
