@@ -3,7 +3,7 @@ import { benchmarkCorpus, curriculum, trainingCorpus, type Passage } from "../da
 import { trainingParagraphs } from "../data/trainingParagraphs";
 import { isLongMarkInput } from "./longMark";
 
-export type TrainingMode = "learn" | "review" | "speed" | "benchmark" | "ime" | "focus";
+export type TrainingMode = "learn" | "review" | "speed" | "benchmark" | "ime" | "focus" | "drill";
 export type TrainingMethod = "keyboard" | "touch" | "ime";
 export type TrainingMaterial = "short" | "paragraph";
 export interface TrainingToken { text: string; paths: string[]; }
@@ -153,7 +153,7 @@ export function readProfile(raw: string | null): TrainingProfile {
     if (Array.isArray(parsed.results)) {
       for (const entry of parsed.results.slice(-180)) {
         if (!record(entry) || typeof entry.date !== "string" || entry.date.length > 40 || !Number.isFinite(Date.parse(entry.date))) continue;
-        if (!["learn", "review", "speed", "benchmark", "ime", "focus"].includes(String(entry.mode)) || !["keyboard", "touch", "ime"].includes(String(entry.method))) continue;
+        if (!["learn", "review", "speed", "benchmark", "ime", "focus", "drill"].includes(String(entry.mode)) || !["keyboard", "touch", "ime"].includes(String(entry.method))) continue;
         if (!number(entry.cpm, 100_000) || !number(entry.accuracy, 100) || !number(entry.duration, 7200) || !number(entry.stage, 5)) continue;
         if (!number(entry.kana, 100_000) || !number(entry.attempts, 1e7) || !number(entry.errors, entry.attempts)) continue;
         if (typeof entry.interrupted !== "boolean" || typeof entry.assisted !== "boolean" || typeof entry.signature !== "string" || entry.signature.length > 100) continue;

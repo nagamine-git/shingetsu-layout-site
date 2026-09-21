@@ -5,10 +5,13 @@ import {
 } from "./trainingProgress";
 import {
   median,
+  suggestedStage,
   type TrainingMethod,
   type TrainingProfile,
   type TrainingResult,
 } from "./training";
+import { curriculum } from "../data/trainingCorpus";
+import { weakTargets } from "./trainingDrill";
 
 const modeNames = {
   learn: "習得",
@@ -17,6 +20,7 @@ const modeNames = {
   benchmark: "定点測定",
   ime: "IME実践",
   focus: "集中",
+  drill: "弱点ドリル",
 };
 const namespace = "http://www.w3.org/2000/svg";
 
@@ -231,14 +235,19 @@ export class TrainingProgressView {
     const due = Object.entries(skills).filter(
       ([kana, skill]): boolean => kana.length === 1 && skill.due <= Date.now(),
     ).length;
+    // 復習期限がなく、全段階が安定している人には弱点ドリルを勧める（頭打ちの打開）
+    const targets = method === "ime" || due || suggestedStage(skills) < curriculum.length - 1 ? [] : weakTargets(profile, method, Date.now(), 3);
     required("lab-quest-text").textContent =
       method === "ime"
         ? "実入力を1セット。速さだけでなく、変換後の一致率も振り返ろう。"
         : due
           ? `${due}文字が復習の時期。ことばの中で、ヒントなしで一度思い出そう。`
-          : "短い文を1セット。迷った文字を見つけて、次の復習につなげよう。";
-    required<HTMLButtonElement>("lab-quest-start").textContent =
-      method === "ime" ? "IME実践を始める →" : "ことばで復習する →";
+          : targets.length
+            ? `弱点ドリルを1本。狙う：${targets.map((target): string => target.label).join(" · ")}。得意な文も3割混ぜます。`
+            : "短い文を1セット。迷った文字を見つけて、次の復習につなげよう。";
+    const quest = required<HTMLButtonElement>("lab-quest-start");
+    quest.textContent = method === "ime" ? "IME実践を始める →" : targets.length ? "弱点を狙う →" : "ことばで復習する →";
+    quest.dataset.quest = targets.length ? "drill" : "review";
     const list = required("lab-milestones");
     list.replaceChildren();
     for (const milestone of progressMilestones(results)) {

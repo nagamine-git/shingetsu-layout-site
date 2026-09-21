@@ -10,6 +10,7 @@ const modes = [
   { id: "benchmark", number: "04", title: "定点測定", sub: "同じ条件で比べる" },
   { id: "ime", number: "05", title: "IME実践", sub: "変換まで、実際に" },
   { id: "focus", number: "06", title: "集中", sub: "短く打って、振り返る" },
+  { id: "drill", number: "07", title: "弱点ドリル", sub: "遅い指を、狙い撃つ" },
 ];
 ---
 
@@ -53,7 +54,7 @@ const modes = [
         <label for="lab-method">入力方法</label>
         <select id="lab-method"><option value="keyboard">PCキーボード</option><option value="touch">画面タップ · 配置を覚える</option></select>
         <div id="lab-stage-control"><label for="lab-level">練習する段階</label><select id="lab-level"><option value="auto">自動 · 記録から選ぶ</option>{curriculum.map((stage, index) => <option value={index}>{index + 1}. {stage.name}</option>)}</select></div>
-        <div id="lab-duration-control" hidden><label for="lab-duration">テスト時間</label><select id="lab-duration"><option value="30">30秒 · 短く集中</option><option value="60" selected>60秒 · 標準</option><option value="120">120秒 · 持続力</option></select></div>
+        <div id="lab-duration-control" hidden><label for="lab-duration">テスト時間</label><select id="lab-duration"><option value="15">15秒 · 疾走（自己ベスト+8%を狙う）</option><option value="30">30秒 · 短く集中</option><option value="60" selected>60秒 · 標準</option><option value="120">120秒 · 持続力</option></select></div>
         <div id="lab-material-control" hidden><label for="lab-material">練習する文章</label><select id="lab-material"><option value="short">語句・短文</option><option value="paragraph">まとまった文章 · 4文でひとつの話</option></select></div>
         <div id="lab-hints-control"><label for="lab-hints">打鍵ガイド</label><select id="lab-hints"><option value="auto">自動 · 覚えたら隠す</option><option value="on">常に表示</option><option value="off">表示しない</option></select></div>
         <KeyboardGeometry id="lab-geometry" />
@@ -117,6 +118,7 @@ const modes = [
       <div><h3>このセッションのペース</h3><svg id="lab-chart" viewBox="0 0 640 170" role="img" aria-label="経過秒数と累積平均入力速度"><path class="lab-chart-grid" d="M35 15V140H620 M35 78H620"/><path id="lab-chart-line" d=""/><text id="lab-chart-max" x="2" y="20"></text><text x="16" y="143">0</text><text x="35" y="164">0秒</text><text id="lab-chart-end" x="555" y="164"></text></svg><p id="lab-chart-note" class="lab-muted"></p></div>
       <div class="lab-next-step"><span class="lab-eyebrow">NEXT / 次の一手</span><h3 id="lab-advice-title"></h3><p id="lab-advice"></p><button id="lab-target-review" type="button" class="lab-secondary">この弱点を文で復習 →</button></div>
     </div>
+    <div id="lab-drill-report" class="lab-drill-report" hidden><h3>狙った弱点の変化 · 選定時の基準値 → この回</h3><ul id="lab-drill-list"></ul><p class="lab-muted">かなは打鍵あたりの中央値、2打鍵は間隔。ミス・ヒントありの試行は除外。1回で決めず、数日空けて同じ弱点が残るかを見ます。</p></div>
     <div class="lab-analysis-grid"><div><h3>迷いやすい文字</h3><ul id="lab-weak-list"></ul></div><div><h3>遅い2打鍵 · この入力方法の累積</h3><ul id="lab-pair-list"></ul></div></div>
     <div id="lab-focus-result" class="lab-focus-result" hidden>
       <div class="lab-focus-metrics"><div><strong id="lab-focus-cpm"></strong><span>かな / 分</span></div><div><strong id="lab-focus-accuracy"></strong><span>打鍵正確率</span></div></div>
@@ -148,6 +150,9 @@ const modes = [
     <div class="lab-skill-heading"><h3>かなの習熟マップ</h3><p>○ 安定 · ◐ 練習中 · — 未練習</p></div>
     <div id="lab-skill-map" class="lab-skill-map"></div>
     <p class="lab-muted">「安定」は、自力での試行・誤打が直近6回以上あり、正答率95%以上・打鍵あたり中央値1.5秒以内。ガイドに頼った正答は判定に含めません。自動段階は対象文字の80%が安定すると進みます。医学的な判定ではなく、本ツール独自の目安です。</p>
+    <div class="lab-skill-heading"><h3>指の速度マップ</h3><p>そのキーへ移る2打鍵の平均間隔。本人の中で相対評価</p></div>
+    <div id="lab-heat-map" class="lab-heat-map" aria-label="キー別の打鍵間隔"></div>
+    <p id="lab-heat-note" class="lab-muted">濃いほど遅い。3標本未満のキーは灰色。ここで濃いキーへの遷移が、弱点ドリルの候補になります。</p>
     <div class="lab-table-scroll"><table class="lab-history-table"><caption>直近8回の記録 · 条件の異なる速度は比較しません</caption><thead><tr><th scope="col">日時</th><th scope="col">内容・入力</th><th scope="col">速度</th><th scope="col">正確率 / 一致率</th><th scope="col">条件</th></tr></thead><tbody id="lab-history"></tbody></table></div>
     <details class="lab-storage"><summary>保存・バックアップ・プライバシー</summary><p id="lab-storage-message">成績はこのブラウザのlocalStorageに保存します。アカウント・同期はありません。</p><p>入力文や打鍵ログをサーバーへ送信しません。バックアップには文字別の集計と練習結果を含みます。サイト共通のアクセス解析は利用しています。</p><div class="lab-storage-actions"><button id="lab-export" type="button" class="lab-secondary">記録を書き出す</button><label class="lab-secondary" for="lab-import">記録を読み込む</label><input id="lab-import" type="file" accept="application/json,.json"/><button id="lab-reset" type="button" class="lab-secondary">この練習の記録を削除</button></div><p id="lab-data-status" role="status"></p></details>
   </section>
@@ -159,6 +164,7 @@ const modes = [
     <article><span>01 / ACQUIRE</span><h3>意味から、指へ。</h3><p>{trainingCorpus.length}件の書き下ろし語・短文を使います。キー位置を覚え、短い文へ。文字を無作為に並べた問題は出しません。ガイドは、同じ文字を3回経験すると自動で隠れ、迷ったときだけ戻ります。</p></article>
     <article><span>02 / RETAIN</span><h3>忘れる前に、別の文で。</h3><p>間違い・迷い・復習期限をもとに出題を調整。できた文字も混ぜます。復習の間隔は1・3・7・14日を目安に広げます。結果直後の復習だけでなく、日を空けて思い出せるかを確かめます。</p></article>
     <article><span>03 / ACCELERATE</span><h3>速さを、分解する。</h3><p>30・60・120秒で自然な文を連続入力。ミスした文字と遅い2打鍵を分析し、その組み合わせを含む別の文章へ戻ります。定点測定は学習用とは別の固定文・60秒・ヒントなしです。</p></article>
+    <article><span>04 / SHARPEN</span><h3>頭打ちを、崩す。</h3><p>覚えたあとの伸び悩みには二つの手。<strong>弱点ドリル</strong>は、本人の中央値より遅いかな・2打鍵を自動で選び、それを含む文を7割、得意な文を3割混ぜて45秒。<strong>疾走</strong>は高速化モードの15秒で、自己ベスト+8%を狙って上限を押し上げ、そのあと60秒で正確さを取り戻します。</p></article>
   </div>
   <details open><summary>最初に：PC・スマートフォン・導入済みIMEの使い分け</summary><div>
     <p><strong>長音「ー」：</strong>PC練習では新月配列のD→Pに加えて、ハイフンキー・テンキーのマイナスでも入力できます。「- － − ‐ ‑ ‒ – — ― ﹣ ｰ ー」を長音の位置だけで受け付けます。Dを押した後はPで完了してください。IME実践でも、お題の「ー」に対して同じ表記を許容します。変換中の未確定文字は採点しません。入力規則が変わったため、PC・IMEの自己ベストは旧記録と分けて比較します。過去の履歴は残ります。</p>
@@ -166,6 +172,8 @@ const modes = [
     <p><strong>まとまった文章：</strong>集中・高速化モードの設定にある「練習する文章」から選べます。仕事の連絡や日々の風景など、4文でひとつの話になる書き下ろし{trainingParagraphs.length}本を収録。原文全体を読みながら、かなの入力位置に合わせて表示欄が追従します。文章の途中でも時間が来たら終了し、それまでに打ち終えたかなを採点。短文とは自己ベストを分けます。<a href="/practice/?mode=focus&amp;material=paragraph">まとまった文章で集中する →</a></p>
     <p><strong>習得・復習・高速化・定点測定・集中：</strong>配列のインストール不要。PCはIMEをオフ、OSのキー変換もオフの英数QWERTY状態にしてください。物理キーの位置を採点します。D/Kは前置シフトなので、同時押しではなく順に押します。濁点はL、半濁点はLを2回。正しい別打鍵経路も受け付けます。誤打では進まないため、Backspaceでの修正は不要です。</p>
     <p><strong>集中：</strong>課題文と小さな残り時間を中心にしたシンプルな画面。初期設定は60秒、設定から30・60・120秒を選べます。最初の打鍵で計測が始まり、時間になると速度・正確率・次の改善点を表示して保存。結果画面でEnter、または「もう一度」のタップで同じ条件の新しい課題へ進みます。Escは練習中でも結果画面でも、同じ課題を最初から即リトライ。入力と残り時間をリセットし、次の打鍵から計測します。途中の記録は中断扱いで保存し、自己ベストに含めません。「中断する」・画面の切り替え・モード選択では再開せず終了します。自動再開や休憩の強制はしません。ガイドは初期状態で非表示、必要ならヒントを使えます。「モード選択」で履歴や詳しい使い方に戻れます。</p>
+    <p><strong>弱点ドリル：</strong>PC・タップの記録から、ヒントなし正答率が90%未満のかな、本人の中央値より1.4倍以上遅いかな、1.5倍以上遅い2打鍵を最大6件選びます。絶対値ではなく本人比なので、上級者でも常に次の一手が出ます。選んだ弱点を含む語・短文を約7割、含まない文を約3割混ぜて45秒。結果では弱点ごとに、選定時の基準値とこの回の中央値を並べます。記録が少ないうちは弱点が選べず、通常の短文練習になります。</p>
+    <p><strong>疾走（高速化モードの15秒）：</strong>30・60・120秒の高速化で残した比較可能な自己ベスト（正確率95%以上・ヒントなし）に8%を上乗せした値を目標に表示します。正確率が90%を切ったら速すぎ。目標を超えたら、同じ速さを60秒・正確率97%以上で保てるかを確かめてください。15秒の記録は同条件どうしでのみ比較し、他の秒数の自己ベストには含めません。</p>
     <p><strong>IME実践：</strong><a href="/#get-started">新月配列を導入</a>した環境で日本語IMEをオンにし、表示の漢字・句読点まで入力します。他の配列でも動くため、配列の自動判定や本人確認はしていません。変換後の文字/分で測り、かな/分とは比較しません。</p>
     <p><strong>スマートフォン：</strong>画面タップで配置を学習できます。外付けキーボードも選べます。タップの記録はPCと独立し、PCの運動技能を同等に鍛えるものではありません。IME実践は端末の日本語キーボードを使います。</p>
     <p><strong>操作：</strong>開始後は最初の入力から計測。Escは集中モードで最初からリトライ、習得・復習で一時停止、その他の時間制テストで終了。Tabは通常のフォーカス移動に使えます。タイピング中に別の画面へ移動すると学習は停止、時間制テストは中断記録になり自己ベストから除外します。</p>
@@ -182,6 +190,8 @@ const modes = [
       <li><a href="https://pubmed.ncbi.nlm.nih.gov/17924799/" target="_blank" rel="noopener noreferrer">Keith & Ericsson, 2007</a>：日常のタイピング経験と、向上を意図した練習を区別する研究。弱点を特定し、狙って練習する設計の参考です。新月配列での因果的な効果を保証しません。</li>
       <li><a href="https://userinterfaces.aalto.fi/136Mkeystrokes/" target="_blank" rel="noopener noreferrer">Dhakal et al., CHI 2018</a>：大規模な打鍵データの観察研究。誤打と2打鍵の分析を参考にしています。相関から特定の打ち方の優位性は断定しません。</li>
       <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8259719/" target="_blank" rel="noopener noreferrer">Buch et al., 2021</a>：短い練習と休息を挟む運動系列課題。ただし<a href="https://pubmed.ncbi.nlm.nih.gov/41150724/" target="_blank" rel="noopener noreferrer">2025年の反証研究</a>もあり、休憩直後の速さを長期学習の証拠とは扱いません。「10秒休めば最速」等は主張しません。</li>
+      <li><a href="https://gwern.net/doc/psychology/spaced-repetition/1979-shea.pdf" target="_blank" rel="noopener noreferrer">Shea & Morgan, 1979</a>・<a href="https://www.nature.com/articles/s41598-024-65753-3" target="_blank" rel="noopener noreferrer">2024年のメタ分析</a>：運動学習で、課題を混ぜて練習するほうが練習中の成績は下がっても保持・転移に有利という「文脈干渉効果」。弱点ドリルで得意な文を3割混ぜる根拠です。かな入力への直接の追試は確認できておらず、7：3の比率は製品上の仮説です。</li>
+      <li>疾走（オーバースピード）：快適速度を超える短い練習で上限を押し上げる方法は、競技タイピングの実務知見で、査読研究は確認できませんでした。効果量・副作用（ミスの癖の定着）は未検証のため、正確率90%未満なら目標を下げる助言を出し、15秒の記録は他の秒数の自己ベストに含めません。</li>
       <li><a href="https://www.osha.gov/etools/computer-workstations/components/keyboards" target="_blank" rel="noopener noreferrer">OSHAのキーボード作業指針</a>：手首を自然に保ち、肩の力を抜き、短い休止を入れる考え方。痛みやしびれが出たら中止し、続く場合は医療専門家に相談してください。医療・リハビリ用のツールではありません。</li>
     </ul>
   </div></details>
