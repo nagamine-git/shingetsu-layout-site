@@ -20,22 +20,47 @@ let manual = false;
 let paused = false;
 let completed = false;
 
+// 遮蔽円の進行。終端速度を残した曲線で、6.4 秒ちょうどに最後の光条が消える。
+// SVG 側の WAAPI easing (coverEasing) と同じ制御点を使う。
+const coverCurve = [0.45, 0, 0.75, 0.8] as const;
+const coverEasing = `cubic-bezier(${coverCurve.join(",")})`;
+
 function easedCover(progress: number): number {
   if (progress >= 1) return 1;
+  if (progress <= 0) return 0;
+  const [x1, y1, x2, y2] = coverCurve;
   let low = 0;
   let high = 1;
   for (let iteration = 0; iteration < 16; iteration += 1) {
     const middle = (low + high) / 2;
     const inverse = 1 - middle;
     const position =
-      3 * inverse * inverse * middle * 0.4 +
-      3 * inverse * middle * middle * 0.2 +
+      3 * inverse * inverse * middle * x1 +
+      3 * inverse * middle * middle * x2 +
       middle ** 3;
     if (position < progress) low = middle;
     else high = middle;
   }
   const parameter = (low + high) / 2;
-  return 3 * (1 - parameter) * parameter ** 2 + parameter ** 3;
+  const inverse = 1 - parameter;
+  return (
+    3 * inverse * inverse * parameter * y1 +
+    3 * inverse * parameter * parameter * y2 +
+    parameter ** 3
+  );
+}
+
+// 露光レイヤーが月の輪郭を基点に光れるよう、月の位置をCSS変数で渡す（モバイル構図用）。
+function measure(): void {
+  const disc = document.querySelector<HTMLElement>(".eclipse-disc");
+  const hero = exposureLayer?.parentElement;
+  if (!disc || !hero || !exposureLayer) return;
+  const bounds = disc.getBoundingClientRect();
+  const origin = hero.getBoundingClientRect();
+  const radius = bounds.width / 2;
+  exposureLayer.style.setProperty("--moon-cx", `${Math.round(bounds.left - origin.left + radius)}px`);
+  exposureLayer.style.setProperty("--moon-cy", `${Math.round(bounds.top - origin.top + radius)}px`);
+  exposureLayer.style.setProperty("--moon-r", `${Math.round(radius)}px`);
 }
 
 function fallback(): void {
@@ -130,20 +155,36 @@ if (
       {
         transform: "translate(-45px, -31px) scale(.82)",
         offset: 0,
-        easing: "cubic-bezier(.4,0,.2,1)",
+        easing: coverEasing,
       },
       {
-        transform: "translate(0px, 0px) scale(1.005)",
+        transform: "translate(0px, 0px) scale(1)",
         offset: 0.8,
         easing: "linear",
       },
-      { transform: "translate(0px, 0px) scale(1.005)", offset: 1 },
+      { transform: "translate(0px, 0px) scale(1)", offset: 1 },
     ],
     { duration: 8000, fill: "forwards" },
   );
   phase.pause();
   phase.currentTime = 0;
   moonAnimations.push(phase);
+  const phaseLayer = document.querySelector<SVGElement>(".eclipse-phase");
+  if (phaseLayer) {
+    // 6.4 秒で月面ごと消し、遮蔽円の縁に残るアンチエイリアスの残滓を除く。
+    const surface = phaseLayer.animate(
+      [
+        { opacity: 1, offset: 0 },
+        { opacity: 1, offset: 0.8 },
+        { opacity: 0, offset: 0.8 },
+        { opacity: 0, offset: 1 },
+      ],
+      { duration: 8000, fill: "forwards" },
+    );
+    surface.pause();
+    surface.currentTime = 0;
+    moonAnimations.push(surface);
+  }
   const moon = document.querySelector<HTMLElement>(".eclipse");
   if (moon) {
     const camera = moon.animate(
@@ -198,7 +239,8 @@ if (
         { opacity: 0.055, transform: "translate(0, 0)", offset: 0.35 },
         { opacity: 0.1, transform: "translate(0, 0)", offset: 0.55 },
         { opacity: 0.035, transform: "translate(0, 0)", offset: 0.8 },
-        { opacity: 0.035, transform: "translate(0, 0)", offset: 1 },
+        { opacity: 0, transform: "translate(0, 0)", offset: 0.8 },
+        { opacity: 0, transform: "translate(0, 0)", offset: 1 },
       ],
       { duration: 8000, fill: "forwards" },
     );
@@ -224,11 +266,12 @@ if (
   if (contact) {
     const impact = contact.animate(
       [
+        // 6.28s 立ち上がり → 6.42s 最大 → 6.72s まで保持 → 7.84s 消灯
         { opacity: 0, offset: 0 },
-        { opacity: 0, offset: 0.8, easing: "cubic-bezier(.16,1,.3,1)" },
-        { opacity: 1, offset: 0.82, easing: "ease-in-out" },
-        { opacity: 0.55, offset: 0.875, easing: "ease-out" },
-        { opacity: 0, offset: 0.97 },
+        { opacity: 0, offset: 0.785, easing: "cubic-bezier(.16,1,.3,1)" },
+        { opacity: 1, offset: 0.8025 },
+        { opacity: 1, offset: 0.84, easing: "ease-out" },
+        { opacity: 0, offset: 0.98 },
         { opacity: 0, offset: 1 },
       ],
       { duration: 8000, fill: "forwards" },
@@ -309,6 +352,7 @@ if (
     "resize",
     (): void => {
       renderer?.resize();
+      measure();
       draw();
     },
     { passive: true },
@@ -323,6 +367,7 @@ if (
   });
   window.addEventListener("pageshow", (event): void => {
     if (event.persisted) {
+      measure();
       draw();
       update();
     }
@@ -335,6 +380,7 @@ if (
   };
   if (document.readyState === "complete") start();
   else window.addEventListener("load", start, { once: true });
+  measure();
   draw();
   update();
 }
