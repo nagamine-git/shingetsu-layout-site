@@ -1,6 +1,7 @@
 ---
 import layout from "../data/layout.json";
 import { practiceModes } from "../lib/practice";
+import KeyboardGeometry from "./KeyboardGeometry.astro";
 ---
 
 <section id="practice" class="content-section practice-section">
@@ -22,6 +23,7 @@ import { practiceModes } from "../lib/practice";
           <label><input type="radio" name="practice-method" value="keyboard" checked /> PCキーボード</label>
           <label><input type="radio" name="practice-method" value="touch" /> 画面タップ</label>
         </fieldset>
+        <KeyboardGeometry id="practice-geometry" />
         <details class="practice-record">
           <summary>この端末の記録・保存について</summary>
           <p id="practice-history">まだ記録はありません。</p>
@@ -41,7 +43,7 @@ import { practiceModes } from "../lib/practice";
         </div>
         <div class="practice-keyboard" aria-label="タップで使える練習キーボード">
           {layout.layers[0].keys.map((row, rowIndex) => (
-            <div class="practice-key-row" data-row={rowIndex}>
+            <div class="practice-key-row keyboard-row" data-row={rowIndex}>
               {row.map((key, columnIndex) => (
                 <button type="button" class="practice-key" data-key={key} aria-label={`${key.toUpperCase()} キー`}>
                   <span>{key.toUpperCase()}</span><span>{layout.layers[1].keys[rowIndex][columnIndex]}</span>

@@ -1,5 +1,7 @@
 ---
 import layoutData from "../data/layout.json";
+import KeyboardGeometry from "./KeyboardGeometry.astro";
+import { keyboardOffset, keyboardWidth } from "../lib/keyboardGeometry";
 
 const fingerColors: Record<number, string> = {
   0: "#f87171", // 左小指
@@ -29,10 +31,13 @@ const layer0 = layoutData.layers[0];
       </p>
     </div>
 
+    <KeyboardGeometry id="finger-geometry" />
     <!-- SVG Keyboard -->
     <div class="overflow-x-auto">
       <svg
-        viewBox="0 0 680 220"
+        viewBox={`0 0 ${keyboardWidth("staggered", 64)} 220`}
+        data-keyboard-pitch="64"
+        data-keyboard-height="220"
         xmlns="http://www.w3.org/2000/svg"
         class="w-full max-w-2xl mx-auto block"
         aria-label="新月配列 キーボード指割り当て図"
@@ -40,13 +45,12 @@ const layer0 = layoutData.layers[0];
       >
         {layer0.keys.map((row, rowIndex) =>
           row.map((char, colIndex) => {
-            const offsetX = [0, 16, 32][rowIndex] ?? 0;
-            const x = colIndex * 64 + offsetX + 4;
+            const x = colIndex * 64 + 4;
             const y = rowIndex * 68 + 4;
             const color = fingerColors[colIndex] ?? "#94a3b8";
             const isHome = rowIndex === 1 && layoutData.homeRow.includes(colIndex);
             return (
-              <g key={`${rowIndex}-${colIndex}`}>
+              <g data-keyboard-row={rowIndex} data-keyboard-column={colIndex} transform={`translate(${keyboardOffset("staggered", rowIndex, colIndex, 64)}, 0)`}>
                 <rect
                   x={x}
                   y={y}

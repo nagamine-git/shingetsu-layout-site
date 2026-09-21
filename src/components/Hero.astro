@@ -1,6 +1,8 @@
 ---
 import layoutData from "../data/layout.json";
 import Eclipse from "./Eclipse.astro";
+import KeyboardGeometry from "./KeyboardGeometry.astro";
+import { keyboardOffset, keyboardWidth } from "../lib/keyboardGeometry";
 
 const kana = [
   ["そ", "こ", "し", "て", "ょ", "つ", "ん", "い", "の", "り"],
@@ -44,8 +46,9 @@ const extensions = layoutData.layers[2].keys;
     <div class="hero-instrument-label" aria-hidden="true">
       <span>SHINGETSU LAYOUT</span><span>30 KEYS / 3 LAYERS</span>
     </div>
+    <KeyboardGeometry id="hero-geometry" />
     <div class="hero-keyboard">
-      <svg viewBox="0 0 662 204" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="新月配列キーボード図（中央大：かな Layer 1、右下小：拡張 Layer 2）">
+      <svg viewBox={`0 0 ${keyboardWidth("staggered", 62)} 204`} data-keyboard-pitch="62" data-keyboard-height="204" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="新月配列キーボード図（中央大：かな Layer 1、右下小：拡張 Layer 2）">
         <defs>
           <linearGradient id="key-material" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#292b2d" />
@@ -57,12 +60,12 @@ const extensions = layoutData.layers[2].keys;
           </linearGradient>
         </defs>
         {kana.map((row, rowIndex) => row.map((character, columnIndex) => {
-          const positionX = columnIndex * 62 + rowIndex * 20 + 4;
+          const positionX = columnIndex * 62 + 4;
           const positionY = rowIndex * 68 + 4;
           const isHome = rowIndex === 1 && layoutData.homeRow.includes(columnIndex);
           const extension = extensions[rowIndex]?.[columnIndex] ?? "";
           return (
-            <g class:list={["hero-key", { "hero-key-home": isHome }]}>
+            <g class:list={["hero-key", { "hero-key-home": isHome }]} data-keyboard-row={rowIndex} data-keyboard-column={columnIndex} transform={`translate(${keyboardOffset("staggered", rowIndex, columnIndex, 62)}, 0)`}>
               <rect x={positionX} y={positionY + 3} width="56" height="60" rx="7" fill="#08090a" />
               <rect class="hero-key-face" x={positionX} y={positionY} width="56" height="58" rx="7" fill={isHome ? "url(#key-home-material)" : "url(#key-material)"} stroke={isHome ? "#6386a1" : "#484a4d"} stroke-width=".7" />
               <text x={positionX + 28} y={character.length > 1 ? positionY + 28 : positionY + 34} text-anchor="middle" fill={isHome ? "#b8d8f4" : "#e3ded5"} font-size={character.length > 1 ? "11" : "19"} font-weight="500">{character}</text>

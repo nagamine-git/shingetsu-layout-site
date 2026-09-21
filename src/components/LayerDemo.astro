@@ -1,5 +1,6 @@
 ---
 import layoutData from "../data/layout.json";
+import KeyboardGeometry from "./KeyboardGeometry.astro";
 ---
 
 <section id="layer-demo" class="content-section layer-section">
@@ -17,6 +18,7 @@ import layoutData from "../data/layout.json";
 
     <!-- Layer tabs -->
     <div class="instrument-panel" data-reveal>
+    <KeyboardGeometry id="layer-geometry" />
     <div class="instrument-tabs" role="tablist" aria-label="レイヤー切替">
       {layoutData.layers.filter((layer) => layer.id !== 0).map((layer) => (
         <button
@@ -37,7 +39,7 @@ import layoutData from "../data/layout.json";
     <div class="space-y-2" id="keyboard-display" role="tabpanel" aria-labelledby="layer-tab-1" tabindex="0">
       {layoutData.layers[1].keys.map((row, rowIndex) => (
         <div
-          class="flex justify-center gap-1.5 layer-row"
+          class="keyboard-row layer-row"
           data-row={rowIndex}
         >
           {row.map((char, colIndex) => {

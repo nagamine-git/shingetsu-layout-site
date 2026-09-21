@@ -16,6 +16,7 @@ const levelSelect = element<HTMLSelectElement>("lab-level");
 const durationSelect = element<HTMLSelectElement>("lab-duration");
 const hintsSelect = element<HTMLSelectElement>("lab-hints");
 const materialSelect = element<HTMLSelectElement>("lab-material");
+const geometrySelect = element<HTMLSelectElement>("lab-geometry");
 const imeInput = element<HTMLTextAreaElement>("lab-ime-input");
 const keys = [...app.querySelectorAll<HTMLButtonElement>(".lab-key")];
 const modeButtons = [...app.querySelectorAll<HTMLButtonElement>("[data-mode]")];
@@ -69,7 +70,7 @@ function persist(): void {
 }
 
 function lockSettings(locked: boolean): void {
-  for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect, ...modeButtons]) control.disabled = locked;
+  for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, materialSelect, geometrySelect, ...modeButtons]) control.disabled = locked;
   element<HTMLButtonElement>("lab-reset").disabled = locked;
   element<HTMLInputElement>("lab-import").disabled = locked;
   element<HTMLButtonElement>("lab-target-review").disabled = locked;
