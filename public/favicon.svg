@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#2e3de8"/>
-  <text x="16" y="22" text-anchor="middle" font-size="18" font-family="serif" fill="white">°</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+  <defs>
+    <mask id="crescent">
+      <circle cx="320" cy="320" r="300" fill="white"/>
+      <circle cx="275" cy="289" r="246" fill="black"/>
+    </mask>
+  </defs>
+  <circle cx="320" cy="320" r="300" fill="#090a0c"/>
+  <circle cx="320" cy="320" r="300" fill="#ece7dd" mask="url(#crescent)"/>
 </svg>

@@ -411,7 +411,7 @@ main :is(h1, h2, h3, h4) { font-weight: 500; }
 .status-light { width: 5px; height: 5px; background: #d7c29f; border-radius: 50%; box-shadow: 0 0 12px #d7c29f70; }
 .hero { position: relative; isolation: isolate; overflow: hidden; padding: 164px 0 40px; background: #090a0c; }
 .lunar-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
-.eclipse[data-renderer="webgl"] > :not(.lunar-canvas) { visibility: hidden; }
+.eclipse[data-renderer="webgl"] > :not(.lunar-canvas):not(.eclipse-contact) { visibility: hidden; }
 .eclipse[data-renderer="webgl"] > .lunar-canvas { opacity: 1; }
 .hero-main { display: grid; grid-template-columns: 1fr 1fr; align-items: center; position: relative; }
 .hero-copy { position: relative; z-index: 2; padding-block: 28px 42px; }
@@ -717,6 +717,8 @@ body[data-home] .subscribe-section { background: radial-gradient(ellipse at 50% 
   body[data-home] .hero-art { order: -1; width: 100%; height: clamp(332px, calc(95vw + 28px), 640px); min-height: 0; margin-bottom: 20px; }
   body[data-home] .eclipse { width: min(118vw, 700px); left: calc(50% - min(59vw, 350px)); top: calc(-1 * clamp(44px, 12vw, 75px)); }
   body[data-home] .moon-replay { bottom: 0; right: 0; font-size: 9px; padding: 8px 14px; min-height: 44px; }
+  /* モバイルは全画面露光ではなく、月の輪郭から外へ広がる光にする。中心は黒いまま。 */
+  body[data-home] .hero-flash { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at var(--moon-cx, 50%) var(--moon-cy, 40%), transparent calc(var(--moon-r, 160px) - 1px), #ffffff var(--moon-r, 160px), #e3edf8e6 calc(var(--moon-r, 160px) + 34px), #b3c9e380 calc(var(--moon-r, 160px) + 120px), transparent calc(var(--moon-r, 160px) + 250px)); }
   body[data-home] .hero-copy { width: 100%; padding: 0; }
   body[data-home] .hero .eyebrow { margin-bottom: 22px; }
   body[data-home] .hero-title-prelude { font-size: clamp(26px, 7vw, 38px); margin-bottom: 16px; }

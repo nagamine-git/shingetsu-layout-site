@@ -1,0 +1,16 @@
+{
+  "name": "新月配列 — 最小かつ最高効率のPCキーボード用かな配列",
+  "short_name": "新月配列",
+  "description": "JIS かなの 46 文字を 30 キーに収め、ホームポジションから指を離さず日本語を入力できるかな配列",
+  "lang": "ja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#090a0c",
+  "theme_color": "#090a0c",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

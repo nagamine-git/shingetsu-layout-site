@@ -53,7 +53,7 @@ void main() {
   float edge = (1.0 - smoothstep(0.40, 0.50, max(abs(point.x), abs(point.y)))) * (1.0 - smoothstep(0.47, 0.69, distance));
   float aura = exp(-abs(distance - radius) * 11.0);
   float completed = smoothstep(6.4, 8.0, seconds);
-  float contact = smoothstep(6.4, 6.56, seconds) * (1.0 - smoothstep(6.56, 7.76, seconds)) * (1.0 - quiet);
+  float contact = smoothstep(6.28, 6.42, seconds) * (1.0 - smoothstep(6.72, 7.84, seconds)) * (1.0 - quiet);
   float wisps = terrain(normalize(point + 0.0001) * 3.2 + distance * 19.0);
   vec3 fogColor = vec3(0.45, 0.48, 0.53);
   vec3 lightColor = vec3(0.91, 0.91, 0.87);
@@ -62,7 +62,10 @@ void main() {
   float rimDistance = max(0.0, distance - radius);
   float rim = exp(-rimDistance * 145.0) * 0.35 + exp(-rimDistance * 28.0) * 0.16;
   float rays = exp(-rimDistance * (19.0 + wisps * 16.0)) * wisps * 0.3;
-  color += lightColor * (rim + rays) * (0.16 + completed * 0.84 + contact * 2.2);
+  float bloom = exp(-rimDistance * 9.0) * 0.5;
+  float glow = (rim + rays) * 2.2 + bloom;
+  color += lightColor * (rim + rays) * (0.16 + completed * 0.84);
+  color += lightColor * glow * contact;
   color += lightColor * aura * banks * contact * 0.4;
   float globe = 1.0 - smoothstep(radius - pixel, radius + pixel, distance);
   vec2 sphere = point / radius;
@@ -72,12 +75,12 @@ void main() {
   float shade = 0.62 + elevation * 0.27 + dot(sphere, vec2(0.13, -0.10));
   vec3 surface = lightColor * shade * (0.64 + mineral * 0.28 + detail * 0.06);
   vec2 center = vec2(-45.0, 31.0) / 600.0 * 0.7 * (1.0 - cover);
-  float shadowRadius = radius * mix(0.82, 1.005, cover);
+  float shadowRadius = radius * mix(0.82, 1.0, cover);
   float shadow = 1.0 - smoothstep(shadowRadius - pixel, shadowRadius + pixel, length(point - center));
   surface *= 1.0 - shadow;
   if (seconds >= 6.4) surface = vec3(0.0);
   color = mix(color, surface, globe);
-  float opacity = max(globe, edge * smoothstep(0.005, 0.13, silver + aura * 0.08 + completed * rim));
+  float opacity = max(globe, edge * smoothstep(0.005, 0.13, silver + aura * 0.08 + completed * rim + contact * glow));
   gl_FragColor = vec4(color, opacity);
 }
 `;
