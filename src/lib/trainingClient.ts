@@ -1,5 +1,5 @@
 import { benchmarkCorpus, curriculum, type Passage } from "../data/trainingCorpus";
-import { codeToKey, comparableResults, fingerHint, freshProfile, keyLegend, mastery, median, priority, readProfile, rhythm, saveSession, selectPassages, suggestedStage, trainingStorageKey, TrainingRun, type TrainingMaterial, type TrainingMethod, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
+import { codeToKey, comparableResults, freshProfile, keyLegend, mastery, median, priority, readProfile, rhythm, saveSession, selectPassages, suggestedStage, trainingStorageKey, TrainingRun, type TrainingMaterial, type TrainingMethod, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
 import { isLongMarkInput, matchesTrainingCharacter } from "./longMark";
 import { TrainingAudio, type BgmPreset, type KeySound } from "./trainingAudio";
 import { progressMilestones } from "./trainingProgress";
@@ -257,12 +257,6 @@ function renderHint(): void {
       keycap.title = `${index + 1}打目：${key.toUpperCase()} キー`;
       guide.append(keycap);
     }
-    if (method() === "keyboard") {
-      const finger = document.createElement("span");
-      finger.className = "lab-finger-hint";
-      finger.textContent = `位置の目安：${fingerHint(run.guide[run.buffer.length] ?? "")}`;
-      guide.append(finger);
-    }
   } else guide.textContent = mode === "ime" ? "漢字・句読点まで、見たとおりに。" : mode === "benchmark" ? "ガイドなし / 定点測定" : "自分の指で、思い出してみよう。";
   for (const key of keys) {
     // 開始前（ready）から次のキーを光らせ、最初の一打の位置が分かるようにする
@@ -414,7 +408,7 @@ function prepare(retryPassages?: Passage[]): void {
   element("lab-input-help").textContent = mode === "ime" ? "新月配列と日本語IMEをオンに。お題の「ー」はハイフン系表記でも可。文が一致すると次へ。予測変換・貼り付けは使いません。" : method() === "touch" ? "画面のキーを順番にタップ。スマホで配置を覚える練習です。PCの記録とは別に保存します。" : "IMEとOS側の新月配列リマップはオフに。英数・QWERTY状態で、D/Kも順番に押します。長音「ー」はD→P、またはハイフンキーでも入力できます。";
   const comparison = comparableResults(profile, signature()).slice(-5);
   pace = sprinting() ? sprintTarget(profile, method(), material()) : comparison.length >= 3 ? Math.round(median(comparison.map((result): number => result.cpm)) * 1.03) : 0;
-  status(mode === "focus" ? "最初の打鍵から計測。時間が来たら結果を確認し、Enterで次の一本へ。" : "開始すると、最初の入力から計測します。");
+  status(mode === "focus" ? "最初の打鍵から計測。時間が来たら結果を確認し、Enterで次の一本へ。" : "開始すると、最初の入力から計測します。", true);
   renderPrompt();
   renderMetrics();
   renderHistory();
@@ -810,6 +804,10 @@ window.addEventListener("pagehide", (): void => { cancelPreview(); sound.mute();
 renderSound();
 
 startButton.addEventListener("click", start);
+for (const link of document.querySelectorAll<HTMLAnchorElement>('a[href="#lab-how"], a[href="#lab-evidence"]')) link.addEventListener("click", (): void => {
+  const wrap = document.getElementById("lab-how") as HTMLDetailsElement | null;
+  if (wrap) wrap.open = true;
+});
 autoButton.addEventListener("click", (): void => {
   if (state === "running" || state === "paused") return;
   auto = true;
