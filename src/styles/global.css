@@ -73,7 +73,9 @@
 .lab-prompt > span[data-state="current"] { color: #fff7dd; border-bottom-color: #e1d0a4; background: #e1d0a411; }
 .training-lab[data-error="true"] .lab-prompt > span[data-state="current"] { color: #ffb7ad; border-bottom-color: #ffb7ad; background: #e27c6614; }
 .lab-key-guide { min-height: 40px; display: flex; gap: 6px; align-items: center; margin-top: 15px; font-size: 11px; color: var(--lab-muted); }
-.lab-key-guide kbd { display: inline-flex; justify-content: center; align-items: center; width: 28px; height: 29px; border: 1px solid #ffffff2b; border-bottom-width: 3px; border-radius: 4px; font: 500 12px var(--font-sans); }
+.lab-key-guide kbd { display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; min-width: 32px; height: 34px; padding-inline: 6px; border: 1px solid #ffffff2b; border-bottom-width: 3px; border-radius: 4px; font: 500 13px/1 var(--font-sans); }
+.lab-key-guide kbd strong { font-weight: 500; }
+.lab-key-guide kbd small { font-size: 8px; color: #9fa8a1; letter-spacing: .05em; }
 .lab-key-guide kbd[data-state="current"] { border-color: #b6d6c66b; color: var(--lab-green); background: #b6d6c60f; }
 .lab-key-guide kbd[data-state="done"] { opacity: .45; }
 .lab-finger-hint { font-size: 10px; margin-left: 8px; }
@@ -85,12 +87,25 @@
 .lab-key { display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 52px; align-items: center; justify-content: center; border: 1px solid #ffffff17; border-bottom: 3px solid #ffffff20; border-radius: 5px; background: #1b211e; color: #c9cec9; touch-action: manipulation; }
 .lab-key > span { font-size: 9px; color: #9fa8a1; }
 .lab-key > strong { font-size: 13px; font-weight: 500; }
-.lab-key[data-next="true"] { border-color: #b6d6c678; color: #e1f2e9; background: #314a3d; }
-.lab-key[data-key="f"], .lab-key[data-key="j"] { border-bottom-color: #b6d6c65c; }
-.lab-key:not(:disabled):active { transform: translateY(1px); background: #3d594a; }
-.lab-punctuation { display: flex; gap: 5px; align-items: center; }
-.lab-punctuation .lab-key { min-width: 38px; min-height: 36px; flex-direction: row; font-size: 10px; }
-.lab-punctuation > span { color: var(--lab-muted); font-size: 9px; margin-left: auto; }
+/* 担当指ごとの色（左右対称）。ローマ字ではなく「位置」で覚えるための手がかり */
+.lab-key[data-finger="lp"], .lab-key[data-finger="rp"], .lab-finger-legend i[data-finger="lp"] { --finger: #a08fd6; }
+.lab-key[data-finger="lr"], .lab-key[data-finger="rr"], .lab-finger-legend i[data-finger="lr"] { --finger: #6aa6df; }
+.lab-key[data-finger="lm"], .lab-key[data-finger="rm"], .lab-finger-legend i[data-finger="lm"] { --finger: #5fbf99; }
+.lab-key[data-finger="li"], .lab-key[data-finger="ri"], .lab-finger-legend i[data-finger="li"] { --finger: #d9b26a; }
+.lab-key[data-finger] { border-top: 2px solid color-mix(in oklab, var(--finger) 60%, transparent); background: color-mix(in oklab, var(--finger) 12%, #1b211e); }
+.lab-key[data-next="true"] { border-color: var(--finger, #b6d6c6); color: #f4fbf6; background: color-mix(in oklab, var(--finger, #b6d6c6) 34%, #1b211e); box-shadow: 0 0 0 1px color-mix(in oklab, var(--finger, #b6d6c6) 60%, transparent), 0 0 18px color-mix(in oklab, var(--finger, #b6d6c6) 45%, transparent); }
+.lab-key[data-next="true"] > strong { color: #ffffff; font-size: 15px; }
+.lab-key[data-key="f"], .lab-key[data-key="j"] { border-bottom-color: #f1ede5a8; }
+.lab-key:not(:disabled):active { transform: translateY(1px); background: color-mix(in oklab, var(--finger, #b6d6c6) 45%, #1b211e); }
+.lab-punctuation { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-top: 4px; }
+.lab-punctuation > span { color: var(--lab-muted); font-size: 9px; }
+.lab-finger-legend { display: inline-flex; align-items: center; gap: 4px 6px; }
+.lab-finger-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--finger); margin-left: 6px; }
+.lab-finger-legend i:first-child { margin-left: 0; }
+/* 上段は [ ] を含む 12 キー。他の段より右へ伸びる実機の形に合わせる */
+.lab-keyboard .keyboard-row[data-row] { grid-template-columns: repeat(51, minmax(0, 1fr)); }
+[data-keyboard-geometry="grid"] .lab-keyboard .keyboard-row { grid-template-columns: repeat(48, minmax(0, 1fr)); }
+[data-keyboard-geometry="split"] .lab-keyboard .keyboard-row { grid-template-columns: repeat(52, minmax(0, 1fr)); }
 .lab-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
 .lab-mobile-settings { display: none; }
 .lab-actions .button-primary { border-radius: 6px; font-size: 12px; }
@@ -219,6 +234,7 @@
   .lab-key { min-height: 47px; border-radius: 4px; }
   .lab-key > strong { font-size: 12px; }
   .lab-punctuation > span { font-size: 8px; }
+  .lab-key > span { font-size: 8px; }
   .lab-actions { gap: 8px; }
   .lab-result { margin: 20px 0 0; padding: 22px 18px; }
   .lab-result-heading { display: block; }
