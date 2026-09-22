@@ -130,7 +130,7 @@ const modes = [
       <div class="lab-next-step"><span class="lab-eyebrow">NEXT / 次の一手</span><h3 id="lab-advice-title"></h3><p id="lab-advice"></p><button id="lab-target-review" type="button" class="lab-secondary">この弱点を文で復習 →</button></div>
     </div>
     <div id="lab-drill-report" class="lab-drill-report" hidden><h3>狙った弱点の変化 · 選定時の基準値 → この回</h3><ul id="lab-drill-list"></ul><p class="lab-muted">かなは打鍵あたりの中央値、2打鍵は間隔。ミス・ヒントありの試行は除外。1回で決めず、数日空けて同じ弱点が残るかを見ます。</p></div>
-    <div class="lab-analysis-grid"><div><h3>迷いやすい文字</h3><ul id="lab-weak-list"></ul></div><div><h3>遅い2打鍵 · この入力方法の累積</h3><ul id="lab-pair-list"></ul></div></div>
+    <details class="lab-analysis-wrap"><summary>迷いやすい文字・遅い2打鍵を見る</summary><div class="lab-analysis-grid"><div><h3>迷いやすい文字</h3><ul id="lab-weak-list"></ul></div><div><h3>遅い2打鍵 · この入力方法の累積</h3><ul id="lab-pair-list"></ul></div></div></details>
     <div id="lab-focus-result" class="lab-focus-result" hidden>
       <div class="lab-focus-metrics"><div><strong id="lab-focus-cpm"></strong><span>かな / 分</span></div><div><strong id="lab-focus-accuracy"></strong><span>打鍵正確率</span></div></div>
       <p id="lab-focus-summary" class="lab-muted"></p>
@@ -140,6 +140,7 @@ const modes = [
       <p id="lab-focus-storage" class="lab-muted"></p>
     </div>
   </section>
+  <details id="lab-records-wrap" class="lab-records-wrap"><summary><span>記録と成長</span><span class="lab-muted">成長グラフ · 今週の積み重ね · 習熟マップ · 速度マップ · 履歴 · バックアップ</span></summary>
   <section class="lab-records" aria-labelledby="lab-records-title">
     <div class="lab-records-heading"><div><p class="lab-eyebrow">YOUR PROGRESS</p><h2 id="lab-records-title">昨日より、自然に。</h2></div><p id="lab-history-summary">記録はこの端末だけに。</p></div>
     <div class="lab-growth">
@@ -167,9 +168,11 @@ const modes = [
     <div class="lab-table-scroll"><table class="lab-history-table"><caption>直近8回の記録 · 条件の異なる速度は比較しません</caption><thead><tr><th scope="col">日時</th><th scope="col">内容・入力</th><th scope="col">速度</th><th scope="col">正確率 / 一致率</th><th scope="col">条件</th></tr></thead><tbody id="lab-history"></tbody></table></div>
     <details class="lab-storage"><summary>保存・バックアップ・プライバシー</summary><p id="lab-storage-message">成績はこのブラウザのlocalStorageに保存します。アカウント・同期はありません。</p><p>入力文や打鍵ログをサーバーへ送信しません。バックアップには文字別の集計と練習結果を含みます。サイト共通のアクセス解析は利用しています。</p><div class="lab-storage-actions"><button id="lab-export" type="button" class="lab-secondary">記録を書き出す</button><label class="lab-secondary" for="lab-import">記録を読み込む</label><input id="lab-import" type="file" accept="application/json,.json"/><button id="lab-reset" type="button" class="lab-secondary">この練習の記録を削除</button></div><p id="lab-data-status" role="status"></p></details>
   </section>
+  </details>
 </div>
 <noscript><p class="lab-nojs">タイピング練習にはJavaScriptが必要です。以下の使い方・学習方針と<a href="/#layers">配列図</a>はそのまま読めます。</p></noscript>
-<section id="lab-how" class="lab-explainer" aria-labelledby="lab-how-title">
+<details id="lab-how" class="lab-explainer-wrap"><summary><span>使い方と根拠</span><span class="lab-muted">入力設定 · 自動メニューの決め方 · 数字の読み方 · 参考研究</span></summary>
+<section class="lab-explainer" aria-labelledby="lab-how-title">
   <p class="lab-eyebrow">PRACTICE WITH INTENTION</p><h2 id="lab-how-title">ただ打つ、で終わらない。</h2>
   <div class="lab-principles">
     <article><span>01 / ACQUIRE</span><h3>意味から、指へ。</h3><p>{trainingCorpus.length}件の書き下ろし語・短文を使います。キー位置を覚え、短い文へ。文字を無作為に並べた問題は出しません。ガイドは、同じ文字を3回経験すると自動で隠れ、迷ったときだけ戻ります。</p></article>
@@ -214,6 +217,7 @@ const modes = [
     <p><a href="https://github.com/nagamine-git/shingetsu-layout-site/blob/main/TRAINING.md">実装・計測定義・調査記録を読む ↗</a></p>
   </div></details>
 </section>
+</details>
 
 <script>
   import "../lib/trainingClient";

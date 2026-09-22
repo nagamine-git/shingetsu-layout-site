@@ -184,6 +184,32 @@
 .lab-explainer a { color: var(--lab-green); text-decoration: underline; text-underline-offset: 3px; }
 .lab-explainer strong { font-weight: 500; color: #e4e8e2; }
 .lab-nojs { border: 1px solid var(--lab-line); padding: 24px; font-size: 14px; line-height: 2; }
+/* ---- 画面の 3 状態（開始前 / 練習中 / 終了後）。認知負荷を下げるため、練習中は課題・次のキー・キーボード・残り時間だけを残す ---- */
+.training-lab[data-quiet-status="true"] .lab-status { position: absolute; width: 1px; height: 1px; min-height: 0; margin: 0; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.training-lab[data-state="ready"] .lab-live { display: none; }
+.training-lab:is([data-state="running"], [data-state="paused"]) :is(.lab-launch, .lab-manual, .lab-soundbar, .lab-plan, .lab-records-wrap, .lab-explainer-wrap, .lab-input-help, .lab-mobile-settings, .lab-console-top > :first-child) { display: none; }
+.training-lab:is([data-state="running"], [data-state="paused"]) .lab-workspace { grid-template-columns: minmax(0, 1fr); }
+.training-lab:is([data-state="running"], [data-state="paused"]) .lab-console { width: min(100%, 900px); justify-self: center; }
+/* 練習中の同時フィードバックは最小限に（ガイダンス仮説）。速度・正確率・ミスは終了後にまとめて見せる。疾走の目標ペースだけ例外 */
+.training-lab:is([data-state="running"], [data-state="paused"]) .lab-live > div:not(.lab-pace) { display: none; }
+.training-lab:is([data-state="running"], [data-state="paused"]):not([data-mode="speed"]) .lab-live { display: none; }
+.training-lab:is([data-state="running"], [data-state="paused"])[data-mode="speed"] .lab-live { grid-template-columns: 1fr; padding: 12px 0; }
+.training-lab:is([data-state="running"], [data-state="paused"])[data-mode="speed"] .lab-live .lab-pace { padding-left: 0; border-left: 0; }
+.training-lab[data-state="paused"] .lab-soundbar { display: flex; }
+.training-lab:is([data-state="done"], [data-state="rest"]) :is(.lab-live, .lab-keyboard, .lab-input-help, .lab-stage) { display: none; }
+.training-page:has(.training-lab:is([data-state="running"], [data-state="paused"])) :is(.lab-heading, .lab-explainer-wrap) { display: none; }
+.training-page:has(.training-lab:is([data-state="running"], [data-state="paused"])) { padding-top: 24px; }
+.lab-records-wrap, .lab-explainer-wrap { margin-top: 40px; border-top: 1px solid var(--lab-line); }
+.lab-records-wrap > summary, .lab-explainer-wrap > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; min-height: 56px; padding: 16px 0; cursor: pointer; list-style: none; font: 500 15px/1.6 var(--font-editorial); letter-spacing: .04em; }
+.lab-records-wrap > summary::-webkit-details-marker, .lab-explainer-wrap > summary::-webkit-details-marker { display: none; }
+.lab-records-wrap > summary::before, .lab-explainer-wrap > summary::before { content: "＋"; font: 500 13px var(--font-sans); color: var(--lab-green); }
+.lab-records-wrap[open] > summary::before, .lab-explainer-wrap[open] > summary::before { content: "－"; }
+.lab-records-wrap > summary .lab-muted, .lab-explainer-wrap > summary .lab-muted { font: 400 11px/1.6 var(--font-sans); }
+.lab-records-wrap .lab-records, .lab-explainer-wrap .lab-explainer { margin-top: 0; border-top: 0; padding-top: 12px; }
+.lab-analysis-wrap { margin-top: 20px; }
+.lab-analysis-wrap > summary { min-height: 44px; padding: 10px 0; font-size: 12px; color: var(--lab-muted); cursor: pointer; }
+.lab-heading { margin-bottom: 24px; }
+.lab-heading h1 { font-size: clamp(24px, 3vw, 36px); margin: 8px 0; }
 .training-lab[data-state="running"] .lab-plan { opacity: .75; }
 .training-lab[data-state="paused"] .lab-stage { opacity: .5; }
 @media (max-width: 1020px) {
