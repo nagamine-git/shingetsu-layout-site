@@ -242,10 +242,19 @@ function renderHint(): void {
     const label = document.createElement("span");
     label.textContent = `${run.token.text} → `;
     guide.append(label);
+    // ローマ字ではなく「そのキーが何を出すか」（★ / ☆ / か / が …）で示す。文字は PC のときだけ小さく添える
     for (const [index, key] of Array.from(run.guide).entries()) {
       const keycap = document.createElement("kbd");
-      keycap.textContent = key.toUpperCase();
+      const legend = document.createElement("strong");
+      legend.textContent = keyLegend(run.guide.slice(0, index), key) || key.toUpperCase();
+      keycap.append(legend);
+      if (method() === "keyboard") {
+        const letter = document.createElement("small");
+        letter.textContent = key.toUpperCase();
+        keycap.append(letter);
+      }
       keycap.dataset.state = index < run.buffer.length ? "done" : index === run.buffer.length ? "current" : "next";
+      keycap.title = `${index + 1}打目：${key.toUpperCase()} キー`;
       guide.append(keycap);
     }
     if (method() === "keyboard") {
@@ -256,7 +265,8 @@ function renderHint(): void {
     }
   } else guide.textContent = mode === "ime" ? "漢字・句読点まで、見たとおりに。" : mode === "benchmark" ? "ガイドなし / 定点測定" : "自分の指で、思い出してみよう。";
   for (const key of keys) {
-    const next = visible && state === "running" && run.nextKeys.includes(key.dataset.key ?? "");
+    // 開始前（ready）から次のキーを光らせ、最初の一打の位置が分かるようにする
+    const next = visible && (state === "running" || state === "ready") && run.nextKeys.includes(key.dataset.key ?? "");
     key.dataset.next = String(next);
     key.disabled = mode === "ime" || method() !== "touch" || state !== "running";
     const label = visible ? keyLegend(run.buffer, key.dataset.key ?? "") : "";
