@@ -8,7 +8,7 @@ const features = [
     title: "30キー完結",
     badge: "コンパクト",
     description:
-      "主要なかなを 30 キー（英字 3 行）に収め、数字行に手を伸ばさず入力できます。ホームポジション周辺にキーを集約した設計が、指の移動距離を最小限に抑えます。",
+      "かなを 30 キー（英字 3 行）に収め、数字行に手を伸ばさず入力できます。頻出かなをホームポジション周辺に集め、標準 US（ANSI）キーボードだけで動きます。",
     stat: "30",
     statLabel: "キーに収録",
   },
@@ -25,12 +25,12 @@ const features = [
   {
     icon: "🧩",
     diagram: "layers",
-    title: "3層構造設計",
-    badge: "柔軟",
+    title: "3段階の打鍵規則",
+    badge: "濁点は後置",
     description:
-      "高頻度（そのまま打鍵）/ 中頻度（☆・★ 前置シフト）/ 低頻度（濁音・半濁音・小文字）の 3 層で文字をカバー。Karabiner-Elements（macOS）または hazkey（Win/Linux）で導入できます。",
+      "単打（高頻度）/ ☆・★ の前置シフト（中頻度）/ 清音のあとに ゛ を打つ後置（濁音・半濁音・小書き）の 3 段構え。濁音の位置を別に覚える必要がありません。Karabiner-Elements（macOS）・Google 日本語入力（Windows）・hazkey（Linux）で導入できます。",
     stat: "3",
-    statLabel: "レイヤー構成",
+    statLabel: "段階の規則",
   },
 ] as const;
 ---

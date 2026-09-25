@@ -168,7 +168,7 @@ const jobs = [
       title: "新月配列",
       hero: true,
       brand: false,
-      subtitle: "最小かつ<strong>最高効率</strong>の<br />PCキーボード用かな配列",
+      subtitle: "30 キー・同時押しなし。<br /><strong>濁音を覚えない</strong>かな配列",
     }),
   },
   {
