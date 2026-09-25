@@ -168,7 +168,7 @@ const jobs = [
       title: "新月配列",
       hero: true,
       brand: false,
-      subtitle: "30 キー・同時押しなし。<br /><strong>濁音を覚えない</strong>かな配列",
+      subtitle: "ローマ字の <strong>1.7 倍</strong>効率を、<br />たった 30 キーで。",
     }),
   },
   {
