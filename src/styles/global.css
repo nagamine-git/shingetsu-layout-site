@@ -493,6 +493,7 @@ main :is(h1, h2, h3, h4) { font-weight: 500; }
 .hero-title { margin: 0; font-family: var(--font-editorial); font-weight: 500; line-height: 1.25; letter-spacing: .015em; font-feature-settings: "palt"; }
 .hero-title span { display: block; }
 .hero-title .hero-title-particle { display: inline-block; font-size: .55em; margin-left: .12em; vertical-align: .06em; }
+.hero-title .hero-title-lead { display: inline-block; font-size: .55em; margin-right: .12em; vertical-align: .06em; letter-spacing: .04em; }
 .hero-title-prelude { font-size: clamp(32px, 3.3vw, 46px); font-weight: 500; margin-bottom: 16px; letter-spacing: .1em; }
 .hero-title-emphasis { font-size: clamp(48px, 6.7vw, 96px); letter-spacing: -.015em; color: var(--lunar-white); white-space: nowrap; }
 .hero-title-detail { font-size: clamp(23px, 2.5vw, 34px); line-height: 1.8; margin-top: 28px; letter-spacing: .12em; color: #c9c6bf; }
@@ -781,6 +782,7 @@ body[data-home] .subscribe-section { background: radial-gradient(ellipse at 50% 
   body[data-home] .page-width { width: calc(100% - 72px); }
   body[data-home] .hero-main { min-height: 610px; }
   body[data-home] .hero-title-emphasis { font-size: clamp(53px, 6.5vw, 72px); }
+  body[data-home] .hero-title-lead { display: block; font-size: .5em; margin: 0 0 .08em; letter-spacing: .1em; }
   body[data-home] .hero-art { height: 48vw; }
   body[data-home] .eclipse { width: 150%; left: -22%; top: -12%; }
   body[data-home] .feature-grid { gap: 24px; }
@@ -798,6 +800,8 @@ body[data-home] .subscribe-section { background: radial-gradient(ellipse at 50% 
   body[data-home] .hero .eyebrow { margin-bottom: 22px; }
   body[data-home] .hero-title-prelude { font-size: clamp(26px, 7vw, 38px); margin-bottom: 16px; }
   body[data-home] .hero-title-emphasis { font-size: clamp(46px, 12.7vw, 88px); }
+  /* 「ローマ字の 1.7 倍の効率を」は 1 行に収まらないので、狭い画面では「ローマ字の」を独立行にする */
+  body[data-home] .hero-title-lead { display: block; font-size: .5em; margin: 0 0 .08em; letter-spacing: .1em; }
   body[data-home] .hero-title-detail { font-size: clamp(21px, 5.7vw, 30px); margin-top: 24px; }
   body[data-home] .hero-description { max-width: 32em; margin-block: 28px; line-height: 2.15; }
   body[data-home] .hero-actions { gap: 12px 22px; }
