@@ -32,6 +32,7 @@ pnpm dev
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile シークレットキー |
 | `RESEND_API_KEY` | Resend API キー |
 | `RESEND_SEGMENT_ID` | Resend Segment ID（サブスクライバー管理用） |
+| `MAIL_FROM` | 送信元アドレス。Resend で検証済みのドメインを使う（未設定なら確認の通知を省略） |
 | `CONTACT_TO_EMAIL` | お問い合わせ通知の送信先メールアドレス |
 
 ## デプロイ
