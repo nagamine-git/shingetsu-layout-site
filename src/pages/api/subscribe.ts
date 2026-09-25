@@ -36,8 +36,9 @@ export const POST: APIRoute = async ({ request }) => {
 
   // 未設定のまま Resend を叩くと 401/422 になって原因が分かりにくいので、先に切り分ける
   if (!resendApiKey || !segmentId) {
-    console.error("Subscribe not configured:", { hasApiKey: !!resendApiKey, hasSegmentId: !!segmentId });
-    return jsonRes({ error: "not_configured" }, 503);
+    const missing = !resendApiKey && !segmentId ? "both" : !resendApiKey ? "key" : "segment";
+    console.error("Subscribe not configured:", { missing });
+    return jsonRes({ error: "not_configured", missing }, 503);
   }
 
   // 購読の本体はコンタクト作成。ここが失敗したときだけ登録失敗として扱う

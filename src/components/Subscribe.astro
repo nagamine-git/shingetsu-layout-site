@@ -136,12 +136,12 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
         // Retention: 購読完了（継続接点を獲得）
         window.track("subscribe_complete", { type: SUBSCRIBE_TYPE });
       } else {
-        const data = (await res.json()) as { error?: string; stage?: string; status?: number };
+        const data = (await res.json()) as { error?: string; stage?: string; status?: number; missing?: string };
         // 原因を切り分けられるよう、サーバーが返した段階と上流ステータスを添える（値は数値と短い符号のみ）
         const detail = data.stage ? `（${data.stage} ${data.status ?? "?"}）` : "";
         msg.textContent =
           data.error === "verification_failed" ? "認証に失敗しました。ページを再読み込みしてお試しください。"
-          : data.error === "not_configured" ? "現在この機能は準備中です。しばらくしてからお試しください。"
+          : data.error === "not_configured" ? `現在この機能は準備中です（未設定: ${data.missing ?? "?"}）。しばらくしてからお試しください。`
           : data.error === "invalid_email" ? "メールアドレスの形式をご確認ください。"
           : `登録に失敗しました${detail}。しばらくしてからお試しください。`;
         msg.className = "text-sm text-red-400";
