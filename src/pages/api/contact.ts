@@ -35,14 +35,14 @@ export const POST: APIRoute = async ({ request }) => {
   const resendApiKey = cfEnv["RESEND_API_KEY"] ?? "";
   try {
     await sendEmail(resendApiKey, {
-      from: "noreply@shingetsu.dev",
+      from: cfEnv["MAIL_FROM"] ?? "",
       to: cfEnv["CONTACT_TO_EMAIL"] ?? "",
       replyTo: email,
       subject: `【お問い合わせ】${name} 様より`,
       html: `<p><strong>名前:</strong> ${esc(name)}</p><p><strong>メール:</strong> ${esc(email)}</p><p><strong>内容:</strong></p><pre>${esc(message)}</pre>`,
     });
     await sendEmail(resendApiKey, {
-      from: "noreply@shingetsu.dev",
+      from: cfEnv["MAIL_FROM"] ?? "",
       to: email,
       subject: "【新月配列】お問い合わせを受け付けました",
       html: `<p>${name} 様</p><p>お問い合わせありがとうございます。2〜3 営業日以内にご返信いたします。</p>`,
