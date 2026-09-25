@@ -28,7 +28,7 @@
 | TypingPractice | 新月専用の20文字練習。基本・前置シフト・濁点・苦手復習、打鍵順ガイド、入力方法別の端末内成績。詳細は `PRACTICE.md` | prerender + vanilla TS |
 | KeyboardViz | SVGベースのキーボード可視化。`shingetsu_analyzer.json` のデータを TypeScript に移植してレンダリング | prerender + client JS |
 | GetStarted | インストール手順（macOS: Karabiner / Windows: Google 日本語入力ローマ字テーブル / Linux: hazkey） | prerender |
-| Subscribe | ニュースレター購読 + 事前登録フォーム（Turnstile Managed mode 保護） | prerender + client JS |
+| Subscribe | ニュースレター購読フォーム（Turnstile Managed mode 保護）。事前登録は 2026-09-26 に廃止し、`type` は `"newsletter"` 固定 | prerender + client JS |
 
 ### 2.2 Blog (`/blog`, `/blog/[slug]`)
 
@@ -63,7 +63,7 @@
 ```json
 {
   "email": "user@example.com",
-  "type": "newsletter" | "preregister",
+  "type": "newsletter",  // API は後方互換で "preregister" も受け付けるが、フォームからは送らない
   "turnstileToken": "..."
 }
 ```
@@ -145,7 +145,7 @@ Resend Segments API + Contact Properties で管理する（Audiences API は dep
 
 | Property key | type | fallbackValue | 用途 |
 |-------------|------|---------------|------|
-| `type` | string | `"newsletter"` | `"newsletter"` または `"preregister"` |
+| `type` | string | `"newsletter"` | フォームからは常に `"newsletter"`（`"preregister"` は旧値。API は後方互換で受理） |
 | `subscribed_at` | string | - | 登録日時（ISO 8601） |
 
 **コンタクト作成例:**
@@ -154,7 +154,7 @@ Resend Segments API + Contact Properties で管理する（Audiences API は dep
 await resend.contacts.create({
   email: "user@example.com",
   properties: {
-    type: "preregister",
+    type: "newsletter",
     subscribed_at: new Date().toISOString(),
   },
   segmentId: env.RESEND_SEGMENT_ID,
