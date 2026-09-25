@@ -14,18 +14,6 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
     </p>
 
     <div class="rounded-2xl border border-white/10 bg-[var(--color-surface-2)] p-8">
-      <!-- Type selector -->
-      <div class="flex gap-3 mb-6 justify-center">
-        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
-          <input type="radio" name="subType" value="newsletter" checked class="accent-brand-500" />
-          ニュースレター
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
-          <input type="radio" name="subType" value="preregister" class="accent-brand-500" />
-          事前登録
-        </label>
-      </div>
-
       <form id="subscribe-form" novalidate class="space-y-4">
         <div>
           <label for="sub-email" class="block text-left text-sm text-slate-400 mb-1">
@@ -85,6 +73,8 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
 </script>
 
 <script>
+  // 事前登録は廃止したので、購読種別はニュースレター固定（API の VALID_TYPES と対応）
+  const SUBSCRIBE_TYPE = "newsletter";
   let turnstileToken = "";
 
   (window as Record<string, unknown>)["onTurnstileSuccess"] = (token: string) => {
@@ -107,16 +97,21 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
     if (!form || !msg) return;
 
     const emailEl = form.querySelector<HTMLInputElement>("#sub-email");
-    const typeEl = form.querySelector<HTMLInputElement>('input[name="subType"]:checked');
     const btn = form.querySelector<HTMLButtonElement>("#sub-btn");
 
-    if (!emailEl || !typeEl || !btn) return;
+    // 黙って return すると「押しても何も起きない」になるため、必ず理由を表示する
+    if (!emailEl || !btn) {
+      msg.textContent = "フォームを読み込めませんでした。ページを再読み込みしてお試しください。";
+      msg.className = "text-sm text-red-400";
+      msg.classList.remove("hidden");
+      return;
+    }
 
     btn.disabled = true;
     btn.textContent = "送信中…";
 
     // Retention: 購読フォームの送信（継続接点の獲得トライ）
-    window.track("subscribe_submit", { type: typeEl.value });
+    window.track("subscribe_submit", { type: SUBSCRIBE_TYPE });
 
     try {
       const res = await fetch("/api/subscribe", {
@@ -124,7 +119,7 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: emailEl.value,
-          type: typeEl.value,
+          type: SUBSCRIBE_TYPE,
           turnstileToken,
         }),
       });
@@ -135,7 +130,7 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
         form.reset();
         turnstileToken = "";
         // Retention: 購読完了（継続接点を獲得）
-        window.track("subscribe_complete", { type: typeEl.value });
+        window.track("subscribe_complete", { type: SUBSCRIBE_TYPE });
       } else {
         const data = (await res.json()) as { error?: string };
         msg.textContent = data.error === "verification_failed"
@@ -143,13 +138,13 @@ const TURNSTILE_SITE_KEY = "0x4AAAAAACpKgDYvdZmNv-bB";
           : "エラーが発生しました。しばらくしてからお試しください。";
         msg.className = "text-sm text-red-400";
         btn.disabled = false;
-        window.track("subscribe_error", { type: typeEl.value, reason: data.error ?? "unknown" });
+        window.track("subscribe_error", { type: SUBSCRIBE_TYPE, reason: data.error ?? "unknown" });
       }
     } catch {
       msg.textContent = "通信エラーが発生しました。";
       msg.className = "text-sm text-red-400";
       btn.disabled = false;
-      window.track("subscribe_error", { type: typeEl.value, reason: "network" });
+      window.track("subscribe_error", { type: SUBSCRIBE_TYPE, reason: "network" });
     }
 
     msg.classList.remove("hidden");
