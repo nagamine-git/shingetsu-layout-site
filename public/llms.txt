@@ -1,6 +1,6 @@
 # 新月配列 (Shingetsu Layout)
 
-> 新月配列は、月配列2-263 をベースにした前置シフト方式のかな配列です。かなを英字 3 行（30 キー）に収め、濁音・半濁音は「清音 + ゛」の後置規則に統合しています。標準 US（ANSI）キーボードで動き、同時押しは使いません。
+> 新月配列は、月配列2-263 をベースにした前置シフト方式のかな配列です。かなを英字 3 行（30 キー）に収め、濁音・半濁音・小書きは「清音 + ゛」の後置規則に統合しています。標準 US（ANSI）キーボードで動き、同時押しは使いません。
 
 ## サイトについて
 
@@ -33,7 +33,7 @@
 - **月配列2-263ベース**: 実績ある月配列の前置シフト方式（先に ☆/★ キーを打ってから文字キーを打つ）を継承
 - **30キー集約**: JIS かなを英字 3 行（30 キー）に収める
 - **頻度ベースの打鍵数**: 高頻度＝1 打鍵 / 中頻度＝2 打鍵（☆・★ 前置シフト）/ 濁音・半濁音・小書き＝清音のあとに ゛ を後置（+1 打、半濁音は +2 打）
-- **1キー統合**: スマホフリック入力の発想で、濁音（゛）・半濁音（゜）・小書きを 1 キー（QWERTY の L 位置）に統合。濁音 = 清音 + ゛、半濁音 = 清音 + ゛゛、小書きの母音 ぁぃぅぇぉ = 親文字 + ゛（ゃ・ゅ・ょ は専用キー）（例外は ぅ = う + ゛゛）
+- **1キー統合**: スマホフリック入力の発想で、濁音（゛）・半濁音（゜）・小書きを 1 キー（QWERTY の L 位置）に統合。濁音 = 清音 + ゛、半濁音 = 清音 + ゛゛、小書き = 親文字 + ゛（ゃ・ゅ・ょ は専用キーでも打てます）（例外は ぅ = う + ゛゛）
 - **ホームポジション基点**: 頻出かなをホームポジション周辺に集中配置し指の移動量を抑える
 
 ## ベンチマーク結果 (2026-09-13 実施、統一評価)
@@ -87,7 +87,7 @@
 - **JIS かな入力との違いは?** JIS かな入力は数字行を含む 4 行にかなが分散するが、新月配列は 30 キー（英字 3 行）に集約し、前置シフトでホームポジション周辺だけで入力を完結させる。
 - **前置シフトとは?** シフトキーを押しながらではなく、先に ☆ または ★ キーを打ってから文字キーを打つ月配列譲りの方式。中頻度は「☆→文字」の 2 打鍵。濁音・半濁音・小書きは前置ではなく、清音のあとに ゛ を打つ後置。
 - **対応 OS は?** macOS 向けは Karabiner-Elements 用 shingetsu-karabiner-qwerty.json、Windows 向けは Google 日本語入力用 shingetsu-romantable.txt、Linux 向けは hazkey 用 shingetsu-ansi-qwerty.tsv（または Colemak 版）を配布。Windows 実機での入力動作は未検証。変更前に現在の設定を保存する。
-- **濁音・半濁音の入力は?** 濁音（゛）・半濁音（゜）・小書きを 1 キー（QWERTY の L 位置）に統合し、清音のあとに打つ後置で入力する。濁音 = 清音 + ゛、半濁音 = 清音 + ゛゛、小書きの母音 ぁぃぅぇぉ = 親文字 + ゛（ゃ・ゅ・ょ は専用キー）。例外は ぅ（う + ゛ は ゔ のため、う + ゛゛）。頻出の濁拗音（じゃ・ぴょ など）は ☆ → ゛ → キー の 3 打で打てる短縮もある。
+- **濁音・半濁音の入力は?** 濁音（゛）・半濁音（゜）・小書きを 1 キー（QWERTY の L 位置）に統合し、清音のあとに打つ後置で入力する。濁音 = 清音 + ゛、半濁音 = 清音 + ゛゛、小書き = 親文字 + ゛（ゃ・ゅ・ょ は専用キーでも打てます）。例外は ぅ（う + ゛ は ゔ のため、う + ゛゛）。頻出の濁拗音（じゃ・ぴょ など）は ☆ → ゛ → キー の 3 打で打てる短縮もある。
 - **習得は難しい?** 新しい配列のため学習コストはあるが、よく使う文字ほど少ない打鍵数に割り当てた一貫した設計で、ホームポジションと前置シフトの規則を覚えれば段階的に習得できる。
 - **費用は?** 配列定義・設定ファイルは GitHub で MIT ライセンスのもと公開され、無料で利用できる。
 - **他のかな配列より速い?** 順位はつかない。日本語入力 56 方式を同一の時間モデル・同一コーパスで評価した結果、上位のかな系 (新下駄・親指シフト NICOLA・月見草・薙刀式・新月・月配列2-263 など) はすべて同格で順位を確定できなかった。ハード制約を外しても新月を有意に超える配列は無かったが、それは「1 位」を意味しない。新月の特徴は標準キーボード・順次打鍵・例外の少ない濁点規則でその同格グループに入っていること。同じく標準キーボードで動く上位配列に月見草 (順次) と薙刀式 (同時押し) がある。
@@ -105,7 +105,7 @@
 ## What it is
 - A free, open-source (MIT) kana layout for fast Japanese input on physical keyboards.
 - Based on Tsuki 2-263; uses **prefix shift** (press ☆ or ★ first, then the letter key) instead of holding a modifier.
-- Frequency-based keystrokes: high-frequency kana = 1 keystroke; mid-frequency = 2 (prefix-shift). Voiced / semi-voiced / small kana use one merged postfix key (like smartphone flick input): voiced = base kana + ゛, semi-voiced = base + ゛゛, small vowels ぁぃぅぇぉ = base + ゛ (ぅ = う + ゛゛; ゃ ゅ ょ have their own keys).
+- Frequency-based keystrokes: high-frequency kana = 1 keystroke; mid-frequency = 2 (prefix-shift). Voiced / semi-voiced / small kana use one merged postfix key (like smartphone flick input): voiced = base kana + ゛, semi-voiced = base + ゛゛, small = base + ゛ (ぅ = う + ゛゛; ゃ ゅ ょ also have dedicated keys).
 - Home-row centric: frequent kana sit around the home position to reduce finger movement.
 
 ## Who it is for
