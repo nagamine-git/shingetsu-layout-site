@@ -1,0 +1,304 @@
+{
+  "generatedAt": "2026-09-25",
+  "corpus": {
+    "name": "青空文庫『こころ』『坊っちゃん』（夏目漱石）",
+    "works": [
+      {
+        "title": "こころ",
+        "url": "https://www.aozora.gr.jp/cards/000148/card773.html"
+      },
+      {
+        "title": "坊っちゃん",
+        "url": "https://www.aozora.gr.jp/cards/000148/card752.html"
+      }
+    ],
+    "kana": 307004,
+    "conversion": "MeCab（unidic-lite）の仮名素性で読みに変換。ひらがな・ー・、。のみを残す",
+    "builder": "scripts/key-heat/build_corpus.py"
+  },
+  "method": "src/data/romantable.json のかな → 最短打鍵列。先頭 2 文字までの最長一致。ー は ★p。☆★゛ も 1 打",
+  "counter": "scripts/key-heat/count_keys.mjs",
+  "tokens": 307004,
+  "presses": 412327,
+  "pressesPerKana": 1.3430671913069536,
+  "skippedChars": 0,
+  "homeRowShare": 0.5847955627451028,
+  "shiftShare": {
+    "☆": 0.11028140286714186,
+    "★": 0.10119395528306417,
+    "゛": 0.08889303877747516
+  },
+  "outsideGrid": [],
+  "keys": [
+    {
+      "id": "q",
+      "row": 0,
+      "col": 0,
+      "kana": "そ",
+      "presses": 4347,
+      "share": 0.01054260332212055,
+      "rank": 25
+    },
+    {
+      "id": "w",
+      "row": 0,
+      "col": 1,
+      "kana": "こ",
+      "presses": 9067,
+      "share": 0.02198982846139108,
+      "rank": 18
+    },
+    {
+      "id": "e",
+      "row": 0,
+      "col": 2,
+      "kana": "し",
+      "presses": 18805,
+      "share": 0.04560700608982676,
+      "rank": 7
+    },
+    {
+      "id": "r",
+      "row": 0,
+      "col": 3,
+      "kana": "て",
+      "presses": 15886,
+      "share": 0.03852767342424823,
+      "rank": 10
+    },
+    {
+      "id": "t",
+      "row": 0,
+      "col": 4,
+      "kana": "ょ",
+      "presses": 3770,
+      "share": 0.009143228554035996,
+      "rank": 29
+    },
+    {
+      "id": "y",
+      "row": 0,
+      "col": 5,
+      "kana": "つ",
+      "presses": 4089,
+      "share": 0.009916886354762119,
+      "rank": 27
+    },
+    {
+      "id": "u",
+      "row": 0,
+      "col": 6,
+      "kana": "ん",
+      "presses": 14396,
+      "share": 0.03491403667477512,
+      "rank": 12
+    },
+    {
+      "id": "i",
+      "row": 0,
+      "col": 7,
+      "kana": "い",
+      "presses": 19031,
+      "share": 0.046155114751156245,
+      "rank": 6
+    },
+    {
+      "id": "o",
+      "row": 0,
+      "col": 8,
+      "kana": "の",
+      "presses": 12808,
+      "share": 0.031062724488088337,
+      "rank": 14
+    },
+    {
+      "id": "p",
+      "row": 0,
+      "col": 9,
+      "kana": "り",
+      "presses": 3844,
+      "share": 0.00932269776172795,
+      "rank": 28
+    },
+    {
+      "id": "a",
+      "row": 1,
+      "col": 0,
+      "kana": "は",
+      "presses": 14017,
+      "share": 0.03399486330024471,
+      "rank": 13
+    },
+    {
+      "id": "s",
+      "row": 1,
+      "col": 1,
+      "kana": "か",
+      "presses": 22068,
+      "share": 0.05352062804521654,
+      "rank": 5
+    },
+    {
+      "id": "d",
+      "row": 1,
+      "col": 2,
+      "kana": "★",
+      "presses": 41725,
+      "share": 0.10119395528306417,
+      "rank": 2
+    },
+    {
+      "id": "f",
+      "row": 1,
+      "col": 3,
+      "kana": "と",
+      "presses": 16626,
+      "share": 0.040322365501167766,
+      "rank": 9
+    },
+    {
+      "id": "g",
+      "row": 1,
+      "col": 4,
+      "kana": "た",
+      "presses": 22165,
+      "share": 0.0537558782228668,
+      "rank": 4
+    },
+    {
+      "id": "h",
+      "row": 1,
+      "col": 5,
+      "kana": "く",
+      "presses": 15364,
+      "share": 0.03726168793215094,
+      "rank": 11
+    },
+    {
+      "id": "j",
+      "row": 1,
+      "col": 6,
+      "kana": "う",
+      "presses": 17138,
+      "share": 0.041564098397631005,
+      "rank": 8
+    },
+    {
+      "id": "k",
+      "row": 1,
+      "col": 7,
+      "kana": "☆",
+      "presses": 45472,
+      "share": 0.11028140286714186,
+      "rank": 1
+    },
+    {
+      "id": "l",
+      "row": 1,
+      "col": 8,
+      "kana": "゛",
+      "presses": 36653,
+      "share": 0.08889303877747516,
+      "rank": 3
+    },
+    {
+      "id": ";",
+      "row": 1,
+      "col": 9,
+      "kana": "き",
+      "presses": 9899,
+      "share": 0.02400764441814385,
+      "rank": 17
+    },
+    {
+      "id": "z",
+      "row": 2,
+      "col": 0,
+      "kana": "す",
+      "presses": 5572,
+      "share": 0.013513546287291397,
+      "rank": 23
+    },
+    {
+      "id": "x",
+      "row": 2,
+      "col": 1,
+      "kana": "け",
+      "presses": 5094,
+      "share": 0.012354272215983916,
+      "rank": 24
+    },
+    {
+      "id": "c",
+      "row": 2,
+      "col": 2,
+      "kana": "に",
+      "presses": 11665,
+      "share": 0.028290652807116682,
+      "rank": 15
+    },
+    {
+      "id": "v",
+      "row": 2,
+      "col": 3,
+      "kana": "な",
+      "presses": 10081,
+      "share": 0.024449041658683522,
+      "rank": 16
+    },
+    {
+      "id": "b",
+      "row": 2,
+      "col": 4,
+      "kana": "さ",
+      "presses": 4150,
+      "share": 0.010064827188129809,
+      "rank": 26
+    },
+    {
+      "id": "n",
+      "row": 2,
+      "col": 5,
+      "kana": "っ",
+      "presses": 7809,
+      "share": 0.018938851930627876,
+      "rank": 19
+    },
+    {
+      "id": "m",
+      "row": 2,
+      "col": 6,
+      "kana": "る",
+      "presses": 7222,
+      "share": 0.017515224566909272,
+      "rank": 20
+    },
+    {
+      "id": ",",
+      "row": 2,
+      "col": 7,
+      "kana": "、",
+      "presses": 6459,
+      "share": 0.015664751520031432,
+      "rank": 22
+    },
+    {
+      "id": ".",
+      "row": 2,
+      "col": 8,
+      "kana": "。",
+      "presses": 7105,
+      "share": 0.017231469197990915,
+      "rank": 21
+    },
+    {
+      "id": "/",
+      "row": 2,
+      "col": 9,
+      "kana": "・",
+      "presses": 0,
+      "share": 0,
+      "rank": 30
+    }
+  ]
+}
