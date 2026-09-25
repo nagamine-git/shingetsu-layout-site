@@ -1,22 +1,28 @@
 ---
-// キーごとの打鍵頻度ヒートマップ。データは scripts/key-heat/ で公開コーパスから生成した src/data/keyHeat.json。
-// 色は 1 色（月光の青白）の明度だけで量を表す。文字は本文色トークンを使い、色に意味を持たせない。
+// キーごとの打鍵頻度ヒートマップ（新月配列 / ローマ字入力 QWERTY の切替）。
+// データは scripts/key-heat/ で公開コーパスから生成した src/data/keyHeat.json。
+// 色は 1 色（月光の青白）の明度だけで量を表し、明るさのスケールは両モード共通。文字は本文色トークンを使う。
 import heat from "../data/keyHeat.json";
 import layoutData from "../data/layout.json";
 import KeyboardGeometry from "./KeyboardGeometry.astro";
 import { keyboardOffset, keyboardWidth } from "../lib/keyboardGeometry";
 
+type Key = { id: string; row: number; col: number; label: string; presses: number; share: number; rank: number };
+type Mode = { label: string; tokens: number; presses: number; pressesPerKana: number; homeRowShare: number; top3: Array<{ id: string; label: string; share: number }>; top3Share: number; outsideGrid: Array<{ id: string; presses: number; share: number }>; keys: Key[] };
+
 const PITCH = 64;
-const keys = heat.keys as Array<{ id: string; row: number; col: number; kana: string; presses: number; share: number; rank: number }>;
-const maxShare = Math.max(...keys.map((k) => k.share));
-const ranked = [...keys].sort((a, b) => a.rank - b.rank);
+const modes: Array<{ id: string; data: Mode; short: string }> = [
+  { id: "shingetsu", data: heat.modes.shingetsu as Mode, short: "新月配列" },
+  { id: "qwerty", data: heat.modes.qwerty as Mode, short: "ローマ字（QWERTY）" },
+];
+const maxShare = heat.sharedMaxShare as number;
 const pct = (v: number, digits = 1): string => `${(v * 100).toFixed(digits)}%`;
 const fmt = (n: number): string => n.toLocaleString("ja-JP");
-const shiftTotal = Object.values(heat.shiftShare as Record<string, number>).reduce((s, v) => s + v, 0);
 // 明度: 0〜1。平方根で持ち上げて、中位のキーも読み取れるようにする
 const level = (share: number): number => Math.sqrt(share / maxShare);
-const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => ({ t, label: pct(maxShare * t * t, 1) }));
-const topKana = ranked.find((k) => !["☆", "★", "゛"].includes(k.kana)) ?? ranked[0];
+const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => pct(maxShare * t * t, 1));
+const shingetsu = modes[0].data;
+const topKana = [...shingetsu.keys].sort((a, b) => a.rank - b.rank).find((k) => !["☆", "★", "゛"].includes(k.label)) ?? shingetsu.keys[0];
 ---
 
 <section id="key-heat" class="content-section heat-section">
@@ -25,100 +31,129 @@ const topKana = ranked.find((k) => !["☆", "★", "゛"].includes(k.kana)) ?? r
       <p class="section-index" aria-hidden="true">03 / DATA</p>
       <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">よく打つキーは、指の下にある</h2>
       <p class="text-slate-400 max-w-xl mx-auto">
-        青空文庫『こころ』『坊っちゃん』の全文（{fmt(heat.corpus.kana)} かな）を新月配列で打ったとき、どのキーを何回押すか。
-        明るいキーほど打鍵が多く、ホーム段に集まっているのが分かります。
+        青空文庫『こころ』『坊っちゃん』の全文（{fmt(heat.corpus.kana)} かな）を打ったとき、どのキーを何回押すか。
+        明るいキーほど打鍵が多く、新月配列ではホーム段に集まっています。ローマ字入力に切り替えると、同じ文章がどこに散るかが見えます。
       </p>
     </div>
 
     <div class="instrument-panel heat-panel" data-reveal>
-      <KeyboardGeometry id="heat-geometry" />
-      <div class="heat-stage">
-        <svg
-          class="heat-svg"
-          viewBox={`0 0 ${keyboardWidth("staggered", PITCH)} 214`}
-          data-keyboard-pitch={PITCH}
-          data-keyboard-height="214"
-          xmlns="http://www.w3.org/2000/svg"
-          role="img"
-          aria-label={`新月配列のキー別打鍵頻度。最多は ${ranked[0].kana || ranked[0].id} で ${pct(ranked[0].share)}`}
-        >
-          <defs>
-            <linearGradient id="heat-face" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#292b2d" />
-              <stop offset="1" stop-color="#17191b" />
-            </linearGradient>
-            <filter id="heat-glow" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="6" />
-            </filter>
-          </defs>
-          {keys.map((k) => {
-            const x = k.col * PITCH + 4;
-            const y = k.row * 68 + 4;
-            const lv = level(k.share);
-            // 面が中間以上の明るさになったら文字を暗い側に切り替える（薄い灰文字が明るい面に沈むのを防ぐ）
-            const bright = lv > 0.42;
-            const isHome = k.row === 1 && layoutData.homeRow.includes(k.col);
-            return (
-              <g
-                class="heat-key"
-                tabindex="0"
-                data-keyboard-row={k.row}
-                data-keyboard-column={k.col}
-                data-id={k.id}
-                data-kana={k.kana}
-                data-presses={k.presses}
-                data-share={pct(k.share, 2)}
-                data-rank={k.rank}
-                transform={`translate(${keyboardOffset("staggered", k.row, k.col, PITCH)}, 0)`}
-              >
-                <title>{k.kana || k.id}: {pct(k.share)}（{fmt(k.presses)} 打、{k.rank} 位）</title>
-                {k.rank <= 3 && (
-                  <rect x={x} y={y} width="58" height="56" rx="8" fill="#bcd8f2" opacity={0.35 * lv} filter="url(#heat-glow)" />
-                )}
-                <rect x={x} y={y + 3} width="58" height="56" rx="8" fill="#08090a" />
-                <rect class="heat-face" x={x} y={y} width="58" height="56" rx="8" fill="url(#heat-face)" stroke={isHome ? "#6386a1" : "#3a3d41"} stroke-width=".8" />
-                <rect class="heat-fill" x={x} y={y} width="58" height="56" rx="8" fill="#c4dcf3" opacity={0.06 + 0.94 * lv} />
-                <text x={x + 29} y={y + 27} text-anchor="middle" fill={bright ? "#0b0c0e" : "#ece7dd"} font-size={k.kana.length > 1 ? "11" : "19"} font-weight="500">{k.kana}</text>
-                <text class="heat-pct" x={x + 29} y={y + 46} text-anchor="middle" fill={bright ? "#2b3036" : "#9c9fa4"} font-size="10" font-family="var(--font-sans)">{pct(k.share)}</text>
-                {isHome && <path d={`M${x + 23} ${y + 51}h12`} stroke={bright ? "#2b3036" : "#8bb6d8"} stroke-width="1.4" />}
-              </g>
-            );
-          })}
-        </svg>
-        <div class="heat-tooltip" role="status" aria-live="polite" hidden>
-          <strong class="heat-tip-kana"></strong><span class="heat-tip-id"></span><br />
-          <span class="heat-tip-share"></span><span class="heat-tip-detail"></span>
+      <div class="heat-controls">
+        <div class="instrument-tabs heat-tabs" role="tablist" aria-label="入力方式の切替">
+          {modes.map((m, i) => (
+            <button
+              type="button"
+              class="heat-tab px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-white/10 text-slate-400 hover:text-white hover:border-white/30"
+              role="tab"
+              id={`heat-tab-${m.id}`}
+              aria-controls={`heat-mode-${m.id}`}
+              aria-selected={i === 0 ? "true" : "false"}
+              tabindex={i === 0 ? 0 : -1}
+              data-mode={m.id}
+            >{m.short}</button>
+          ))}
         </div>
+        <KeyboardGeometry id="heat-geometry" />
       </div>
+
+      {modes.map((m, i) => {
+        const ranked = [...m.data.keys].sort((a, b) => a.rank - b.rank);
+        const outside = m.data.outsideGrid.reduce((s, o) => s + o.share, 0);
+        return (
+          <div class="heat-mode" id={`heat-mode-${m.id}`} role="tabpanel" aria-labelledby={`heat-tab-${m.id}`} data-mode={m.id} hidden={i !== 0}>
+            <div class="heat-stage">
+              <svg
+                class="heat-svg"
+                viewBox={`0 0 ${keyboardWidth("staggered", PITCH)} 214`}
+                data-keyboard-pitch={PITCH}
+                data-keyboard-height="214"
+                xmlns="http://www.w3.org/2000/svg"
+                role="img"
+                aria-label={`${m.data.label}のキー別打鍵頻度。最多は ${ranked[0].label} で ${pct(ranked[0].share)}`}
+              >
+                <defs>
+                  <linearGradient id={`heat-face-${m.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#292b2d" />
+                    <stop offset="1" stop-color="#17191b" />
+                  </linearGradient>
+                  <filter id={`heat-glow-${m.id}`} x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="6" />
+                  </filter>
+                </defs>
+                {m.data.keys.map((k) => {
+                  const x = k.col * PITCH + 4;
+                  const y = k.row * 68 + 4;
+                  const lv = level(k.share);
+                  // 面が中間以上の明るさになったら文字を暗い側に切り替える
+                  const bright = lv > 0.42;
+                  const isHome = k.row === 1 && layoutData.homeRow.includes(k.col);
+                  return (
+                    <g
+                      class="heat-key"
+                      tabindex="0"
+                      data-keyboard-row={k.row}
+                      data-keyboard-column={k.col}
+                      data-id={k.id}
+                      data-label={k.label}
+                      data-presses={k.presses}
+                      data-share={pct(k.share, 2)}
+                      data-rank={k.rank}
+                      transform={`translate(${keyboardOffset("staggered", k.row, k.col, PITCH)}, 0)`}
+                    >
+                      <title>{k.label || k.id}: {pct(k.share)}（{fmt(k.presses)} 打、{k.rank} 位）</title>
+                      {k.rank <= 3 && (
+                        <rect x={x} y={y} width="58" height="56" rx="8" fill="#bcd8f2" opacity={0.35 * lv} filter={`url(#heat-glow-${m.id})`} />
+                      )}
+                      <rect x={x} y={y + 3} width="58" height="56" rx="8" fill="#08090a" />
+                      <rect class="heat-face" x={x} y={y} width="58" height="56" rx="8" fill={`url(#heat-face-${m.id})`} stroke={isHome ? "#6386a1" : "#3a3d41"} stroke-width=".8" />
+                      <rect class="heat-fill" x={x} y={y} width="58" height="56" rx="8" fill="#c4dcf3" opacity={0.06 + 0.94 * lv} />
+                      <text x={x + 29} y={y + 27} text-anchor="middle" fill={bright ? "#0b0c0e" : "#ece7dd"} font-size={k.label.length > 1 ? "11" : "19"} font-weight="500" font-family={m.id === "qwerty" ? "var(--font-sans)" : undefined}>{k.label}</text>
+                      <text class="heat-pct" x={x + 29} y={y + 46} text-anchor="middle" fill={bright ? "#2b3036" : "#9c9fa4"} font-size="10" font-family="var(--font-sans)">{pct(k.share)}</text>
+                      {isHome && <path d={`M${x + 23} ${y + 51}h12`} stroke={bright ? "#2b3036" : "#8bb6d8"} stroke-width="1.4" />}
+                    </g>
+                  );
+                })}
+              </svg>
+              <div class="heat-tooltip" role="status" aria-live="polite" hidden>
+                <strong class="heat-tip-label"></strong><span class="heat-tip-id"></span><br />
+                <span class="heat-tip-share"></span><span class="heat-tip-detail"></span>
+              </div>
+            </div>
+
+            <dl class="heat-stats">
+              <div><dt>ホーム段の打鍵</dt><dd>{pct(m.data.homeRowShare)}</dd></div>
+              <div><dt>上位 3 キーの打鍵</dt><dd>{pct(m.data.top3Share)}<small>{m.data.top3.map((k) => k.label).join(" ")}</small></dd></div>
+              <div><dt>打鍵 / かな</dt><dd>{m.data.pressesPerKana.toFixed(2)}</dd></div>
+              {m.id === "shingetsu" ? (
+                <div><dt>最多のかな</dt><dd>{topKana.label}<small>{pct(topKana.share)}・{topKana.rank} 位（1〜3 位は ☆ ★ ゛）</small></dd></div>
+              ) : (
+                <div><dt>英字 3 行の外</dt><dd>{pct(outside)}<small>{m.data.outsideGrid.map((o) => `${o.id}（ー）`).join(" ") || "なし"}</small></dd></div>
+              )}
+            </dl>
+
+            <details class="heat-table">
+              <summary>表で見る（30 キー全部）</summary>
+              <table>
+                <thead><tr><th scope="col">順位</th><th scope="col">表示</th><th scope="col">キー</th><th scope="col">打鍵</th><th scope="col">割合</th></tr></thead>
+                <tbody>
+                  {ranked.map((k) => (
+                    <tr><td>{k.rank}</td><td>{k.label}</td><td><code>{k.id}</code></td><td>{fmt(k.presses)}</td><td>{pct(k.share, 2)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          </div>
+        );
+      })}
 
       <div class="heat-legend" aria-hidden="true">
         <span class="heat-legend-bar"></span>
-        <span class="heat-legend-ticks">{ticks.map((t) => <span>{t.label}</span>)}</span>
-        <span class="heat-legend-caption">全打鍵に占める割合。明るいほど多い</span>
+        <span class="heat-legend-ticks">{ticks.map((t) => <span>{t}</span>)}</span>
+        <span class="heat-legend-caption">全打鍵に占める割合。明るいほど多い（スケールは両方式で共通）</span>
       </div>
-
-      <dl class="heat-stats">
-        <div><dt>ホーム段の打鍵</dt><dd>{pct(heat.homeRowShare)}</dd></div>
-        <div><dt>☆ ★ ゛ の打鍵</dt><dd>{pct(shiftTotal)}</dd></div>
-        <div><dt>打鍵 / かな</dt><dd>{heat.pressesPerKana.toFixed(2)}</dd></div>
-        <div><dt>最多のかな</dt><dd>{topKana.kana}<small>{pct(topKana.share)}・{topKana.rank} 位（1〜3 位は ☆ ★ ゛）</small></dd></div>
-      </dl>
-
-      <details class="heat-table">
-        <summary>表で見る（30 キー全部）</summary>
-        <table>
-          <thead><tr><th scope="col">順位</th><th scope="col">かな</th><th scope="col">キー</th><th scope="col">打鍵</th><th scope="col">割合</th></tr></thead>
-          <tbody>
-            {ranked.map((k) => (
-              <tr><td>{k.rank}</td><td>{k.kana}</td><td><code>{k.id}</code></td><td>{fmt(k.presses)}</td><td>{pct(k.share, 2)}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
 
       <p class="heat-note">
         集計 {heat.generatedAt}。コーパスは <a href={heat.corpus.works[0].url} rel="noopener">『こころ』</a>・<a href={heat.corpus.works[1].url} rel="noopener">『坊っちゃん』</a>（青空文庫）を {heat.corpus.conversion}。
-        かな → 打鍵列は配布テーブルと同じ <code>romantable.json</code> の最短列、ー は ★p、☆ ★ ゛ も 1 打として数えています。
+        新月配列は配布テーブルと同じ <code>romantable.json</code> の最短列（ー は ★p、☆ ★ ゛ も 1 打）。ローマ字入力は各かなに Google 日本語入力で有効な最短のローマ字（し = si、じゃ = ja。ん は次が母音・や行・な行・文末なら nn、他は n。っ は次の子音を重ねる。ー は数字段の -）。
         生成スクリプトは <a href="https://github.com/nagamine-git/shingetsu-layout-site/tree/main/scripts/key-heat" rel="noopener">scripts/key-heat</a> にあり、同じ数字を再現できます。
       </p>
     </div>
@@ -127,6 +162,11 @@ const topKana = ranked.find((k) => !["☆", "★", "゛"].includes(k.kana)) ?? r
 
 <style>
   .heat-panel { display: grid; gap: 28px; }
+  .heat-controls { display: grid; gap: 8px; }
+  .heat-tabs { justify-content: center; }
+  .heat-tab[aria-selected="true"] { color: #fff; border-color: #ffffff66; background: #ffffff0d; }
+  .heat-mode { display: grid; gap: 28px; }
+  .heat-mode[hidden] { display: none; }
   .heat-stage { position: relative; }
   .heat-svg { width: 100%; max-width: 760px; display: block; margin: 0 auto; overflow: visible; }
   .heat-key { cursor: default; outline: none; }
@@ -143,10 +183,10 @@ const topKana = ranked.find((k) => !["☆", "★", "゛"].includes(k.kana)) ?? r
   .heat-legend-ticks { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
   .heat-legend-caption { text-align: center; }
   .heat-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0; padding-top: 24px; border-top: 1px solid var(--lunar-line); }
-  .heat-stats div { display: grid; gap: 6px; }
+  .heat-stats div { display: grid; gap: 6px; align-content: start; }
   .heat-stats dt { font-size: 11px; letter-spacing: .1em; color: var(--lunar-muted); }
   .heat-stats dd { margin: 0; font-family: var(--font-editorial); font-size: 30px; line-height: 1; color: var(--lunar-white); font-variant-numeric: tabular-nums; }
-  .heat-stats dd small { display: block; margin-top: 6px; font-family: var(--font-sans); font-size: 12px; color: var(--lunar-muted); }
+  .heat-stats dd small { display: block; margin-top: 6px; font-family: var(--font-sans); font-size: 12px; line-height: 1.5; color: var(--lunar-muted); }
   .heat-table summary { cursor: pointer; font-size: 13px; color: var(--color-brand-400); }
   .heat-table table { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
   .heat-table th, .heat-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--lunar-line); }
@@ -163,31 +203,60 @@ const topKana = ranked.find((k) => !["☆", "★", "゛"].includes(k.kana)) ?? r
 </style>
 
 <script>
-  const stage = document.querySelector<HTMLElement>("#key-heat .heat-stage");
-  const tip = stage?.querySelector<HTMLElement>(".heat-tooltip");
-  if (stage && tip) {
-    const kanaEl = tip.querySelector<HTMLElement>(".heat-tip-kana")!;
-    const idEl = tip.querySelector<HTMLElement>(".heat-tip-id")!;
-    const shareEl = tip.querySelector<HTMLElement>(".heat-tip-share")!;
-    const detailEl = tip.querySelector<HTMLElement>(".heat-tip-detail")!;
-    const show = (key: SVGGElement): void => {
-      const d = key.dataset;
-      kanaEl.textContent = d.kana || d.id || "";
-      idEl.textContent = d.id ?? "";
-      shareEl.textContent = d.share ?? "";
-      detailEl.textContent = ` · ${Number(d.presses).toLocaleString("ja-JP")} 打 · ${d.rank} 位`;
-      const r = key.getBoundingClientRect();
-      const s = stage.getBoundingClientRect();
-      tip.style.left = `${r.left - s.left + r.width / 2}px`;
-      tip.style.top = `${r.top - s.top}px`;
-      tip.hidden = false;
+  const section = document.querySelector<HTMLElement>("#key-heat");
+  if (section) {
+    // 入力方式の切替
+    const tabs = [...section.querySelectorAll<HTMLButtonElement>(".heat-tab")];
+    const panels = [...section.querySelectorAll<HTMLElement>(".heat-mode")];
+    const select = (mode: string): void => {
+      for (const tab of tabs) {
+        const active = tab.dataset.mode === mode;
+        tab.setAttribute("aria-selected", String(active));
+        tab.tabIndex = active ? 0 : -1;
+      }
+      for (const panel of panels) panel.hidden = panel.dataset.mode !== mode;
+      window.track?.("key_heat_mode", { mode });
     };
-    const hide = (): void => { tip.hidden = true; };
-    for (const key of stage.querySelectorAll<SVGGElement>(".heat-key")) {
-      key.addEventListener("mouseenter", (): void => show(key));
-      key.addEventListener("focus", (): void => show(key));
-      key.addEventListener("mouseleave", hide);
-      key.addEventListener("blur", hide);
+    tabs.forEach((tab, index): void => {
+      tab.addEventListener("click", (): void => select(tab.dataset.mode ?? "shingetsu"));
+      tab.addEventListener("keydown", (event): void => {
+        let next: number;
+        if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+        else if (event.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+        else return;
+        event.preventDefault();
+        tabs[next].focus();
+        tabs[next].click();
+      });
+    });
+
+    // ツールチップ（モードごと）
+    for (const stage of section.querySelectorAll<HTMLElement>(".heat-stage")) {
+      const tip = stage.querySelector<HTMLElement>(".heat-tooltip");
+      if (!tip) continue;
+      const labelEl = tip.querySelector<HTMLElement>(".heat-tip-label")!;
+      const idEl = tip.querySelector<HTMLElement>(".heat-tip-id")!;
+      const shareEl = tip.querySelector<HTMLElement>(".heat-tip-share")!;
+      const detailEl = tip.querySelector<HTMLElement>(".heat-tip-detail")!;
+      const show = (key: SVGGElement): void => {
+        const d = key.dataset;
+        labelEl.textContent = d.label || d.id || "";
+        idEl.textContent = d.id ?? "";
+        shareEl.textContent = d.share ?? "";
+        detailEl.textContent = ` · ${Number(d.presses).toLocaleString("ja-JP")} 打 · ${d.rank} 位`;
+        const r = key.getBoundingClientRect();
+        const s = stage.getBoundingClientRect();
+        tip.style.left = `${r.left - s.left + r.width / 2}px`;
+        tip.style.top = `${r.top - s.top}px`;
+        tip.hidden = false;
+      };
+      const hide = (): void => { tip.hidden = true; };
+      for (const key of stage.querySelectorAll<SVGGElement>(".heat-key")) {
+        key.addEventListener("mouseenter", (): void => show(key));
+        key.addEventListener("focus", (): void => show(key));
+        key.addEventListener("mouseleave", hide);
+        key.addEventListener("blur", hide);
+      }
     }
   }
 </script>
