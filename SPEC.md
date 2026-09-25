@@ -22,12 +22,12 @@
 
 | セクション | 内容 | レンダリング |
 |-----------|------|------------|
-| Hero | タグライン「最小かつ最高効率のPCキーボード用かな配列」+ メインビジュアル (SVG) | prerender |
-| Features | 3カード: 1キー統合 / 最小打鍵数 / 3層構造 | prerender |
+| Hero | タグライン「30 キー・同時押しなし。濁音を覚えない、PCキーボード用かな配列」+ メインビジュアル (SVG)。「最高効率」等の最上級は統一ベンチマークで支持されないため使わない（2026-09-25） | prerender |
+| Features | 3カード: 30キー完結 / 頻度ベースの打鍵数（☆★前置） / 3段階の打鍵規則（濁点は「清音 + ゛」の後置） | prerender |
 | LayerDemo | 3層構造のインタラクティブ図解。レイヤー切替ボタンで Layer 0/1/2 の文字配置を可視化 | prerender + client JS |
 | TypingPractice | 新月専用の20文字練習。基本・前置シフト・濁点・苦手復習、打鍵順ガイド、入力方法別の端末内成績。詳細は `PRACTICE.md` | prerender + vanilla TS |
 | KeyboardViz | SVGベースのキーボード可視化。`shingetsu_analyzer.json` のデータを TypeScript に移植してレンダリング | prerender + client JS |
-| GetStarted | インストール手順（macOS: Karabiner / Windows・Linux: hazkey） | prerender |
+| GetStarted | インストール手順（macOS: Karabiner / Windows: Google 日本語入力ローマ字テーブル / Linux: hazkey） | prerender |
 | Subscribe | ニュースレター購読 + 事前登録フォーム（Turnstile Managed mode 保護） | prerender + client JS |
 
 ### 2.2 Blog (`/blog`, `/blog/[slug]`)
