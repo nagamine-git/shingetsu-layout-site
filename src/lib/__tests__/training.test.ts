@@ -28,6 +28,20 @@ describe("TrainingRun", () => {
     expect(run.pairs.length).toBe(Math.max(0, path.length - 1));
     expect(run.cpm(60_000)).toBeGreaterThan(0);
   });
+
+  it("accepts the ☆゛ shortcut and the long way for 濁拗音, hinting the shortcut first", () => {
+    const passage = { id: "t", text: "邪魔", reading: "じゃま", topic: "", stage: 4, benchmark: false };
+    expect(tokenize("じゃ")[0].paths[0]).toBe("klc");
+    expect(tokenize("みゃ")[0].paths[0]).toBe("klh");
+    const short = new TrainingRun([passage]);
+    for (const [index, key] of ["k", "l", "c"].entries()) expect(short.press(key, index * 100)).toBe(true);
+    expect(short.completed).toBe(2);
+    expect(short.errors).toBe(0);
+    const long = new TrainingRun([passage]);
+    for (const [index, key] of ["e", "l", "k", "b"].entries()) expect(long.press(key, index * 100)).toBe(true);
+    expect(long.completed).toBe(2);
+    expect(long.errors).toBe(0);
+  });
 });
 
 describe("profile persistence", () => {

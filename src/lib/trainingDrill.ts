@@ -34,7 +34,8 @@ export function pairLabel(pair: string): string {
  */
 export function weakTargets(profile: TrainingProfile, method: "keyboard" | "touch", now: number, limit = 6): DrillTarget[] {
   const stats = profile[method];
-  const kanaEntries = Object.entries(stats).filter(([kana, skill]): boolean => kana.length === 1 && skill.samples >= 3 && skill.latencies.length >= 3);
+  // じゃ・ぴょ など 2 文字で 1 まとまりの打鍵（☆゛ の短縮・拗音）も対象。遅延は 1 打あたりなので 1 文字のかなと比べられる
+  const kanaEntries = Object.entries(stats).filter(([kana, skill]): boolean => kana.length <= 2 && skill.samples >= 3 && skill.latencies.length >= 3);
   const personalLatency = median(kanaEntries.map(([, skill]): number => median(skill.latencies)));
   const kanaTargets = kanaEntries
     .map(([kana, skill]): DrillTarget & { score: number } => {

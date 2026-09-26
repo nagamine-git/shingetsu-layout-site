@@ -124,7 +124,9 @@ const modes = [
     <div class="lab-result-heading"><div><p class="lab-eyebrow">SESSION COMPLETE</p><h2 id="lab-result-title">一歩、指に馴染んだ。</h2></div><p id="lab-result-tag"></p></div>
     <p id="lab-result-summary"></p>
     <p id="lab-result-growth" class="lab-result-growth"></p>
-    <p id="lab-measure-next" class="lab-measure-next" aria-keyshortcuts="Enter Space Escape" hidden></p>
+    <div id="lab-measure-bar" class="lab-measure-bar" hidden><p id="lab-measure-next" class="lab-measure-next"></p><button id="lab-measure-go" type="button" class="button-primary" aria-keyshortcuts="Enter Space">次の一本 <kbd>Enter ↵</kbd></button></div>
+    <p id="lab-atc" class="lab-atc" hidden></p>
+    <figure id="lab-loop-growth" class="lab-loop-growth" hidden><figcaption id="lab-loop-growth-title">成長曲線</figcaption><svg id="lab-loop-chart" viewBox="0 0 640 150" role="img" aria-label="同じ条件の入力速度の推移"></svg><p id="lab-loop-growth-note" class="lab-muted"></p></figure>
     <p id="lab-result-milestone" class="lab-result-milestone" hidden></p>
     <div class="lab-result-grid">
       <div><h3>このセッションのペース</h3><svg id="lab-chart" viewBox="0 0 640 170" role="img" aria-label="経過秒数と累積平均入力速度"><path class="lab-chart-grid" d="M35 15V140H620 M35 78H620"/><path id="lab-chart-line" d=""/><text id="lab-chart-max" x="2" y="20"></text><text x="16" y="143">0</text><text x="35" y="164">0秒</text><text id="lab-chart-end" x="555" y="164"></text></svg><p id="lab-chart-note" class="lab-muted"></p></div>

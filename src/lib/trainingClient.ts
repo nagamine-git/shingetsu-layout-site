@@ -2,8 +2,9 @@ import { benchmarkCorpus, curriculum, type Passage } from "../data/trainingCorpu
 import { codeToKey, comparableResults, freshProfile, keyLegend, mastery, median, priority, readProfile, rhythm, saveSession, selectPassages, suggestedStage, trainingStorageKey, TrainingRun, type TrainingMaterial, type TrainingMethod, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
 import { isLongMarkInput, matchesTrainingCharacter } from "./longMark";
 import { TrainingAudio, type BgmPreset, type KeySound } from "./trainingAudio";
-import { progressMilestones } from "./trainingProgress";
+import { growthSeries, progressMilestones } from "./trainingProgress";
 import { TrainingProgressView } from "./trainingProgressView";
+import { atcEstimate, bestKeystrokeRate, conversionRatio, keystrokeRate, podiumGap } from "./trainingAtc";
 import { measureWeakShare, planMeasure, planSession, type MeasurePlan, type SessionPlan } from "./trainingPlan";
 import { drillChanges, drillDuration, keyHeat, pairLabel, selectDrillPassages, sprintAdvice, sprintDuration, sprintTarget, weakTargets, type DrillTarget } from "./trainingDrill";
 import layoutData from "../data/layout.json";
@@ -373,6 +374,7 @@ function prepare(retryPassages?: Passage[]): void {
   imeInput.disabled = true;
   app.dataset.state = state;
   app.dataset.mode = mode;
+  app.dataset.measuring = String(measuring);
   app.dataset.method = effectiveMethod();
   app.dataset.material = material();
   const prompt = element("lab-prompt");
@@ -430,7 +432,8 @@ function prepare(retryPassages?: Passage[]): void {
     element("lab-session-label").textContent = `測る · ${measurePlan.kind === "anchor" ? "定点" : "別の文"} / 60秒`;
     startButton.textContent = measurePlan.kind === "anchor" ? "60秒の定点測定を始める ↗" : "60秒、別の文で測る ↗";
   }
-  element("lab-measure-next").hidden = true;
+  element("lab-measure-bar").hidden = true;
+  element("lab-loop-growth").hidden = true;
   element("lab-cpm-label").textContent = mode === "ime" ? "変換後の文字 / 分" : "かな / 分";
   element("lab-accuracy-label").textContent = mode === "ime" ? "確定文の一致率" : "打鍵正確率";
   element("lab-errors-label").textContent = mode === "ime" ? "不一致文字" : "ミス打鍵";
@@ -568,7 +571,7 @@ function renderAnalysis(): void {
   if (!candidates.length || mode === "ime") weak.textContent = mode === "ime" ? "IME内の物理打鍵は採点しません。" : "完了した文字がまだありません。";
   if (!slow.length || mode === "ime") pairList.textContent = mode === "ime" ? "変換後の文章の一致を評価します。" : "4標本以上の組み合わせが集まると表示します。";
   nextFocus = candidates.find((kana): boolean => run.assessmentSamples.some((sample): boolean => sample.text === kana && (sample.errors > 0 || sample.hinted))) ?? slow[0]?.[0] ?? candidates[0] ?? "";
-  element<HTMLButtonElement>("lab-target-review").hidden = !nextFocus || mode === "ime";
+  element<HTMLButtonElement>("lab-target-review").hidden = !nextFocus || mode === "ime" || measuring;
 }
 
 function renderDrillReport(): void {
@@ -703,8 +706,13 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
   const resultPanel = element("lab-result");
   resultPanel.hidden = false;
   status(interrupted ? "中断記録として保存しました。自己ベストには含めません。" : "練習が終わりました。結果と次の一手を確認できます。");
-  if ((!interrupted || mode === "focus") && !document.hidden) { resultPanel.focus({ preventScroll: true }); resultPanel.scrollIntoView({ block: "nearest" }); }
-  if (measuring) renderMeasureNext(result, interrupted);
+  if (measuring && !document.hidden) {
+    // ループ中は結果を画面の上に出す（下までスクロールさせない）。フォーカスを置き、Enter / Space ですぐ次へ
+    window.scrollTo({ top: 0, behavior: "instant" });
+    resultPanel.focus({ preventScroll: true });
+  } else if ((!interrupted || mode === "focus") && !document.hidden) { resultPanel.focus({ preventScroll: true }); resultPanel.scrollIntoView({ block: "nearest" }); }
+  renderAtc(result);
+  if (measuring) { renderMeasureNext(result, interrupted); renderLoopGrowth(result); }
   if (!interrupted && mode !== "focus" && !measuring) beginRest();
 }
 
@@ -722,11 +730,70 @@ function restart(): void {
   status("同じ課題を最初から。次の打鍵から計測します。", true);
 }
 
+// ATC の単位で見る：指の速さ（打/秒）と変換後の字/分。タップは PC と比べないので出さない
+function renderAtc(result: TrainingResult): void {
+  const line = element("lab-atc");
+  line.hidden = !timed() || result.method === "touch" || result.duration < 15;
+  if (line.hidden) return;
+  const main = document.createElement("strong");
+  const note = document.createElement("small");
+  if (result.method === "ime") {
+    main.textContent = `ATCと同じ単位：変換後 ${Math.round(result.cpm)}字/分 · ${podiumGap(Math.round(result.cpm))}`;
+    note.textContent = "IME で変換まで打った実測値です。2026年の部門・表彰の規定は未発表なので、2025年の記録を参考線にしています。";
+  } else {
+    const rate = keystrokeRate(result);
+    const best = bestKeystrokeRate(profile, result.method);
+    const estimate = atcEstimate(result.cpm, conversionRatio(run.passages.slice(0, run.passageIndex + 1)));
+    main.textContent = `指の速さ ${rate.toFixed(1)}打/秒${best > 0 ? `（自己ベスト ${best.toFixed(1)}）` : ""} · ATC換算の目安 ${estimate}字/分 · ${podiumGap(estimate)}`;
+    note.textContent = "換算は、この回の文の「漢字かな交じりの字数 ÷ 読みの字数」を掛けた値です。変換の時間を含まないので、上限寄りの目安。実際の値は入力方法「導入済みIME」で測れます。";
+  }
+  line.replaceChildren(main, note);
+}
+
+// ループの成長曲線。横軸は時刻ではなく回数（数分おきに回しても点が潰れない）。同じ条件の直近30回
+function renderLoopGrowth(result: TrainingResult): void {
+  const figure = element("lab-loop-growth");
+  const points = growthSeries(profile.results, result.signature, 0).slice(-30);
+  figure.hidden = points.length < 2;
+  if (figure.hidden) return;
+  const svg = element("lab-loop-chart");
+  const ns = "http://www.w3.org/2000/svg";
+  const values = points.map((point): number => point.result.cpm);
+  const low = Math.max(0, Math.floor(Math.min(...values) * .9 / 10) * 10);
+  const high = Math.max(low + 10, Math.ceil(Math.max(...values) * 1.05 / 10) * 10);
+  const x = (index: number): number => 44 + index * 580 / Math.max(1, points.length - 1);
+  const y = (value: number): number => 128 - (value - low) / (high - low) * 112;
+  const node = (name: string, attributes: Record<string, string | number>, text = ""): SVGElement => {
+    const created = document.createElementNS(ns, name);
+    for (const [key, value] of Object.entries(attributes)) created.setAttribute(key, String(value));
+    if (text) created.textContent = text;
+    return created;
+  };
+  const children: SVGElement[] = [
+    node("path", { class: "lab-chart-grid", d: "M44 16V128H624" }),
+    node("text", { x: 38, y: 20, "text-anchor": "end" }, String(high)),
+    node("text", { x: 38, y: 131, "text-anchor": "end" }, String(low)),
+    node("text", { x: 44, y: 146 }, `${points.length}回前`),
+    node("text", { x: 624, y: 146, "text-anchor": "end" }, "今回"),
+  ];
+  const medians = points.map((point, index): string => point.median === null ? "" : `${x(index).toFixed(1)},${y(point.median).toFixed(1)}`).filter(Boolean);
+  if (medians.length >= 2) children.push(node("polyline", { class: "lab-loop-median", points: medians.join(" ") }));
+  points.forEach((point, index): void => {
+    children.push(node("circle", { class: point.eligible ? "lab-loop-dot" : "lab-loop-dot lab-loop-dot-muted", cx: x(index).toFixed(1), cy: y(point.result.cpm).toFixed(1), r: index === points.length - 1 ? 5 : 3.5 }));
+  });
+  svg.replaceChildren(...children);
+  const latestMedian = [...points].reverse().find((point): boolean => point.median !== null)?.median ?? null;
+  const unit = result.method === "ime" ? "字" : "かな";
+  svg.setAttribute("aria-label", `同じ条件の直近${points.length}回の入力速度。今回 ${Math.round(result.cpm)}${unit}/分${latestMedian === null ? "" : `、直近5回の中央値 ${Math.round(latestMedian)}${unit}/分`}。`);
+  element("lab-loop-growth-title").textContent = `成長曲線 · ${measurePlan?.kind === "anchor" ? "定点（固定文）" : "別の文・60秒"}の直近${points.length}回`;
+  element("lab-loop-growth-note").textContent = `● 比較できる記録　○ ガイドあり・正確率95%未満・中断など　線：直近5回の中央値（比較できる記録が5回そろうと出ます）。縦軸は${unit}/分。`;
+}
+
 function renderMeasureNext(result: TrainingResult, interrupted: boolean): void {
   if (!interrupted) measureSeconds += result.duration;
   const upcoming = planMeasure(profile, methodSelect.value === "ime" ? "ime" : method(), Date.now());
   const line = element("lab-measure-next");
-  line.hidden = false;
+  element("lab-measure-bar").hidden = false;
   // 休憩は強制しない（結果を見ている間が休み）。長く続いたら短い休止を勧める（OSHA）
   const rest = measureSeconds >= measureBreakSeconds ? "20分続きました。1〜2分、手を離して肩の力を抜きましょう。痛み・しびれがあれば今日はここまで。 " : "";
   line.textContent = `${rest}次：${upcoming.title}。Enter か Space で始まり、最初の打鍵から計測。Esc で同じ文をもう一度。`;
@@ -751,6 +818,7 @@ function startMeasure(): void {
 function leaveMeasure(): void {
   measuring = false;
   measurePlan = undefined;
+  app.dataset.measuring = "false";
 }
 
 function endRest(): void {
@@ -905,6 +973,7 @@ document.addEventListener("keydown", (event): void => {
   }
 });
 element("lab-retry").addEventListener("click", retry);
+element("lab-measure-go").addEventListener("click", startMeasure);
 document.addEventListener("keydown", (event): void => {
   if (mode !== "focus" || event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
   const target = event.target;
