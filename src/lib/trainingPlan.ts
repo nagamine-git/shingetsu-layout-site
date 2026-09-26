@@ -2,7 +2,7 @@
 // 学習者にモードを選ばせない設計（自己調整は弱点だけの練習や再読を選びがち: Kornell & Bjork 2008）。
 // 優先順位: 段階が残る人は習得（復習期限がたまれば 1 ブロック挟む）→ 復習期限 → 弱点ドリル → 高速化（60秒 ⇄ 疾走15秒）。
 import { curriculum } from "../data/trainingCorpus";
-import { comparableResults, suggestedStage, type TrainingMaterial, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
+import { comparableResults, suggestedStage, type TrainingMaterial, type TrainingMethod, type TrainingMode, type TrainingProfile, type TrainingResult } from "./training";
 import { drillDuration, sprintDuration, sprintTarget, weakTargets, type DrillTarget } from "./trainingDrill";
 
 export interface SessionPlan {
@@ -63,4 +63,33 @@ export function planSession(profile: TrainingProfile, method: "keyboard" | "touc
     return { ...base, mode: "speed", duration: 60, hints: "off", title: "定着 · 60秒", reason: last.accuracy < 90 ? `疾走の正確率 ${last.accuracy.toFixed(1)}%。速さを少し戻して、正確さを先に。` : "疾走で押し上げた速さを、60秒・正確率97%以上で保てるか。" };
   }
   return { ...base, mode: "speed", duration: 60, hints: "off", title: "高速化 · 60秒", reason: latest ? "正確率95%以上を保って、自然な文で少しずつ速く。" : "まず60秒の比較できる記録を作ります。正確率95%以上・ヒントなしが基準。" };
+}
+
+// 「測る」のループ。上級者が Enter だけで 60 秒をくり返し、測るたびに伸びる設計。
+// - その日の最初の 1 本だけ固定文（定点）。同じ文を何度も打つと文を覚えて速くなり、実力の比較にならないため
+// - 2 本目以降は直近に打っていない文で 60 秒。本人比の弱点を含む文を 3 割だけ混ぜる（文脈干渉: Shea & Morgan 1979）
+// 1 日 1 本・3 割は製品上のヒューリスティックで、最適値の実証ではない。
+export const measureWeakShare = .3;
+
+export interface MeasurePlan {
+  kind: "anchor" | "fresh";
+  mode: TrainingMode;
+  title: string;
+  reason: string;
+  targets: DrillTarget[];
+}
+
+export function fixedSignature(method: TrainingMethod): string {
+  return `${method === "ime" ? "ime" : "benchmark"}:${method}:60:${lastStage}:v1${method === "touch" ? "" : ":longmark-v1"}`;
+}
+
+export function planMeasure(profile: TrainingProfile, method: TrainingMethod, now: number): MeasurePlan {
+  const today = new Date(now).toDateString();
+  const anchored = profile.results.some((result): boolean => result.signature === fixedSignature(method) && !result.interrupted && new Date(result.date).toDateString() === today);
+  const learning = method !== "ime" && suggestedStage(profile[method]) < lastStage ? "まだ習得中の文字があります。覚える段階は「練習する」がおすすめ。" : "";
+  if (!anchored) {
+    return { kind: "anchor", mode: method === "ime" ? "ime" : "benchmark", targets: [], title: "定点 · 今日の1本目", reason: `${learning}昨日までと同じ固定文で、今日の実力を1回だけ測ります。` };
+  }
+  const targets = method === "ime" ? [] : weakTargets(profile, method, now);
+  return { kind: "fresh", mode: method === "ime" ? "ime" : "speed", targets, title: "別の文 · 60秒", reason: `${learning}直近に打っていない文で60秒。固定文を覚えるのではなく、どの文でも速く。` };
 }

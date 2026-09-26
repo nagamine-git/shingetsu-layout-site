@@ -4,7 +4,7 @@ import { isLongMarkInput, matchesTrainingCharacter } from "./longMark";
 import { TrainingAudio, type BgmPreset, type KeySound } from "./trainingAudio";
 import { progressMilestones } from "./trainingProgress";
 import { TrainingProgressView } from "./trainingProgressView";
-import { planSession, type SessionPlan } from "./trainingPlan";
+import { measureWeakShare, planMeasure, planSession, type MeasurePlan, type SessionPlan } from "./trainingPlan";
 import { drillChanges, drillDuration, keyHeat, pairLabel, selectDrillPassages, sprintAdvice, sprintDuration, sprintTarget, weakTargets, type DrillTarget } from "./trainingDrill";
 import layoutData from "../data/layout.json";
 import type { TrainingSoundRecord } from "./training";
@@ -49,6 +49,11 @@ let drillTargets: DrillTarget[] = [];
 // 「練習する」＝自動メニュー。手動でモードを選ぶと false
 let auto = requestedMode !== "focus" && requestedMode !== "drill";
 let plan: SessionPlan | undefined;
+// 「測る」のループ中は true。Enter / Space で次の一本、Esc で同じ文をやり直す
+let measuring = false;
+let measurePlan: MeasurePlan | undefined;
+let measureSeconds = 0;
+const measureBreakSeconds = 20 * 60;
 const autoButton = element<HTMLButtonElement>("lab-auto");
 const measureButton = element<HTMLButtonElement>("lab-measure");
 let composing = false;
@@ -120,13 +125,22 @@ function applyPlan(): void {
   levelSelect.value = plan.mode === "learn" ? String(plan.stage) : "auto";
   hintsSelect.value = plan.hints;
 }
+function applyMeasure(): void {
+  measurePlan = planMeasure(profile, methodSelect.value === "ime" ? "ime" : method(), Date.now());
+  mode = measurePlan.mode;
+  // 比較できるよう、別の文の回も 60 秒・語句短文・ガイドなしに揃える
+  durationSelect.value = "60";
+  materialSelect.value = "short";
+  hintsSelect.value = "off";
+}
+function freshMeasure(): boolean { return measuring && measurePlan?.kind === "fresh"; }
 function timed(): boolean { return mode === "speed" || mode === "benchmark" || mode === "ime" || mode === "focus" || mode === "drill"; }
 function duration(): number { return mode === "speed" || mode === "focus" ? Number(durationSelect.value) : mode === "drill" ? drillDuration : timed() ? 60 : 0; }
 // 高速化モードの 15 秒＝疾走（オーバースピード）。目標は自己ベスト +8%
 function sprinting(): boolean { return mode === "speed" && duration() === sprintDuration; }
 function level(): number { return timed() ? 5 : levelSelect.value === "auto" ? suggestedStage(profile[method()]) : Number(levelSelect.value); }
 function material(): TrainingMaterial { return (mode === "focus" || mode === "speed") && materialSelect.value === "paragraph" ? "paragraph" : "short"; }
-function signature(): string { return `${mode}:${effectiveMethod()}:${duration()}:${level()}:${material() === "paragraph" ? "paragraph:" : ""}v1${effectiveMethod() === "touch" ? "" : ":longmark-v1"}`; }
+function signature(): string { return `${mode}:${effectiveMethod()}:${duration()}:${level()}:${material() === "paragraph" ? "paragraph:" : ""}${mode === "ime" && freshMeasure() ? "corpus:" : ""}v1${effectiveMethod() === "touch" ? "" : ":longmark-v1"}`; }
 function status(message: string, quiet = false): void {
   element("lab-status").textContent = message;
   app.dataset.quietStatus = String(quiet);
@@ -325,6 +339,14 @@ function renderMetrics(): void {
 
 function passages(): Passage[] {
   if (mode === "drill") return selectDrillPassages(profile, drillTargets, Math.random);
+  if (freshMeasure()) {
+    // 弱点を含む文は 3 割だけ（残り 7 割は得意な文）。IME は漢字を含む文章で変換まで
+    if (mode === "ime") {
+      const sentences = selectPassages(profile, "keyboard", "speed", level(), Date.now(), Math.random).filter((passage): boolean => passage.reading.length >= 10);
+      return sentences.length ? sentences : [...benchmarkCorpus];
+    }
+    return drillTargets.length ? selectDrillPassages(profile, drillTargets, Math.random, 1 - measureWeakShare, 500) : selectPassages(profile, method(), "speed", level(), Date.now(), Math.random);
+  }
   return selectPassages(profile, method(), mode, level(), Date.now(), Math.random, focus, material());
 }
 
@@ -338,6 +360,7 @@ function prepare(retryPassages?: Passage[]): void {
   state = "ready";
   syncMethod();
   if (mode === "drill") drillTargets = weakTargets(profile, method(), Date.now());
+  else if (measuring) drillTargets = measurePlan?.kind === "fresh" ? measurePlan.targets : [];
   run = new TrainingRun(retryPassages ?? passages());
   lastHintRender = "";
   manualHint = false;
@@ -390,7 +413,7 @@ function prepare(retryPassages?: Passage[]): void {
   element<HTMLButtonElement>("lab-show-hint").disabled = mode === "benchmark" || mode === "ime";
   for (const button of modeButtons) button.setAttribute("aria-pressed", String(!auto && button.dataset.mode === mode));
   autoButton.setAttribute("aria-pressed", String(auto));
-  measureButton.setAttribute("aria-pressed", String(!auto && (mode === "benchmark" || mode === "ime")));
+  measureButton.setAttribute("aria-pressed", String(measuring));
   element("lab-manual-label").textContent = auto ? "" : `現在：${names[mode]}`;
   element("lab-auto-hint").textContent = mode === "ime" ? "IME で固定文 60 秒。変換後の文字で計測" : auto && plan ? `次：${plan.title}` : "記録から今日のメニューを自動で決めます";
   const currentStage = curriculum[level()];
@@ -401,6 +424,13 @@ function prepare(retryPassages?: Passage[]): void {
     element("lab-plan-title").textContent = plan.title;
     element("lab-plan-description").textContent = plan.reason;
   }
+  if (measuring && measurePlan) {
+    element("lab-plan-title").textContent = measurePlan.title;
+    element("lab-plan-description").textContent = measurePlan.reason;
+    element("lab-session-label").textContent = `測る · ${measurePlan.kind === "anchor" ? "定点" : "別の文"} / 60秒`;
+    startButton.textContent = measurePlan.kind === "anchor" ? "60秒の定点測定を始める ↗" : "60秒、別の文で測る ↗";
+  }
+  element("lab-measure-next").hidden = true;
   element("lab-cpm-label").textContent = mode === "ime" ? "変換後の文字 / 分" : "かな / 分";
   element("lab-accuracy-label").textContent = mode === "ime" ? "確定文の一致率" : "打鍵正確率";
   element("lab-errors-label").textContent = mode === "ime" ? "不一致文字" : "ミス打鍵";
@@ -416,7 +446,7 @@ function prepare(retryPassages?: Passage[]): void {
 
 function start(): void {
   if (state === "rest") return;
-  if (state === "done") { if (auto) applyPlan(); prepare(); }
+  if (state === "done") { if (measuring) applyMeasure(); else if (auto) applyPlan(); prepare(); }
   if (state !== "ready") return;
   state = "running";
   cancelPreview();
@@ -480,7 +510,7 @@ function resume(): void {
 }
 
 function extend(): void {
-  if (timed() && run.passages.length - run.passageIndex <= 2) run.append(mode === "speed" || mode === "focus" || mode === "drill" ? passages() : benchmarkCorpus);
+  if (timed() && run.passages.length - run.passageIndex <= 2) run.append(mode === "speed" || mode === "focus" || mode === "drill" || freshMeasure() ? passages() : benchmarkCorpus);
 }
 
 function feed(key: string): void {
@@ -544,7 +574,7 @@ function renderAnalysis(): void {
 function renderDrillReport(): void {
   const report = element("lab-drill-report");
   const list = element("lab-drill-list");
-  report.hidden = mode !== "drill" || !drillTargets.length;
+  report.hidden = (mode !== "drill" && !freshMeasure()) || !drillTargets.length;
   if (report.hidden) return;
   list.replaceChildren();
   const changes = drillChanges(drillTargets, run.assessmentSamples, run.pairs);
@@ -561,7 +591,10 @@ function renderDrillReport(): void {
     item.append(name, value);
     list.append(item);
   }
-  if (changes.length) {
+  if (changes.length && freshMeasure()) {
+    element("lab-advice-title").textContent = faster >= Math.ceil(changes.length / 2) ? "混ぜた弱点が、速くなってきた。" : "混ぜた弱点は、まだ遅い。";
+    element("lab-advice").textContent = "この回は弱点を含む文を3割だけ混ぜました。1回で決めず、次の一本・数日後も同じ文字が残るかを見ます。弱点は記録から自動で選び直します。";
+  } else if (changes.length) {
     element("lab-advice-title").textContent = faster >= Math.ceil(changes.length / 2) ? "狙いどおり。日を空けて、もう一度。" : "まだ遅い。同じ弱点を、別の文で。";
     element("lab-advice").textContent = faster >= Math.ceil(changes.length / 2) ? "半数以上の弱点が速くなりました。1回の改善は一時的なこともあるので、明日以降の弱点ドリルで同じ項目が消えているかを確かめましょう。" : "弱点は本人比で選び直されます。もう一本の弱点ドリルか、遅い2打鍵を意識しながらの高速化60秒で、指の順序を身体に入れましょう。";
   }
@@ -622,7 +655,7 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
   pauseButton.hidden = true;
   element("lab-abandon").hidden = true;
   startButton.hidden = false;
-  startButton.textContent = "次の練習へ ↗";
+  startButton.textContent = measuring ? "次の一本へ ↗" : "次の練習へ ↗";
   lockSettings(false);
   hintsSelect.disabled = mode === "benchmark";
   const seconds = run.elapsed(now) / 1000;
@@ -671,7 +704,8 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
   resultPanel.hidden = false;
   status(interrupted ? "中断記録として保存しました。自己ベストには含めません。" : "練習が終わりました。結果と次の一手を確認できます。");
   if ((!interrupted || mode === "focus") && !document.hidden) { resultPanel.focus({ preventScroll: true }); resultPanel.scrollIntoView({ block: "nearest" }); }
-  if (!interrupted && mode !== "focus") beginRest();
+  if (measuring) renderMeasureNext(result, interrupted);
+  if (!interrupted && mode !== "focus" && !measuring) beginRest();
 }
 
 function retry(): void {
@@ -680,12 +714,43 @@ function retry(): void {
 }
 
 function restart(): void {
-  if (mode !== "focus" || (state !== "ready" && state !== "running" && state !== "done")) return;
+  if ((mode !== "focus" && !measuring) || (state !== "ready" && state !== "running" && state !== "done")) return;
   const retryPassages = [...run.passages];
   if (state === "running") finish(true, performance.now(), false);
   prepare(retryPassages);
   start();
   status("同じ課題を最初から。次の打鍵から計測します。", true);
+}
+
+function renderMeasureNext(result: TrainingResult, interrupted: boolean): void {
+  if (!interrupted) measureSeconds += result.duration;
+  const upcoming = planMeasure(profile, methodSelect.value === "ime" ? "ime" : method(), Date.now());
+  const line = element("lab-measure-next");
+  line.hidden = false;
+  // 休憩は強制しない（結果を見ている間が休み）。長く続いたら短い休止を勧める（OSHA）
+  const rest = measureSeconds >= measureBreakSeconds ? "20分続きました。1〜2分、手を離して肩の力を抜きましょう。痛み・しびれがあれば今日はここまで。 " : "";
+  line.textContent = `${rest}次：${upcoming.title}。Enter か Space で始まり、最初の打鍵から計測。Esc で同じ文をもう一度。`;
+  if (measurePlan?.kind === "anchor" && !interrupted) element("lab-result-tag").textContent = `定点 · ${element("lab-result-tag").textContent}`;
+}
+
+function startMeasure(): void {
+  if (state === "running" || state === "paused") return;
+  clearInterval(restTimer);
+  restTimer = undefined;
+  element("lab-rest").hidden = true;
+  if (!measuring) measureSeconds = 0;
+  measuring = true;
+  auto = false;
+  focus = "";
+  closeFocusSettings();
+  applyMeasure();
+  prepare();
+  start();
+}
+
+function leaveMeasure(): void {
+  measuring = false;
+  measurePlan = undefined;
 }
 
 function endRest(): void {
@@ -810,6 +875,7 @@ for (const link of document.querySelectorAll<HTMLAnchorElement>('a[href="#lab-ho
 });
 autoButton.addEventListener("click", (): void => {
   if (state === "running" || state === "paused") return;
+  leaveMeasure();
   auto = true;
   focus = "";
   closeFocusSettings();
@@ -818,16 +884,25 @@ autoButton.addEventListener("click", (): void => {
   start();
 });
 // 測る: 固定文 60 秒（IME が選ばれていれば prepare 内で ime に切り替わる）
+// 測る: その日の最初は固定文、以降は別の文で 60 秒をくり返す（IME が選ばれていれば IME で）
 measureButton.addEventListener("click", (): void => {
-  if (state === "running" || state === "paused" || state === "rest") return;
-  auto = false;
   if (mode !== "focus") returnMode = mode;
-  mode = "benchmark";
-  focus = "";
-  hintsSelect.value = "off";
-  closeFocusSettings();
-  prepare();
-  start();
+  startMeasure();
+});
+// ループの操作。Tab はフォーカス移動に残す（キーボードだけで画面を操作できるように）
+document.addEventListener("keydown", (event): void => {
+  if (!measuring || event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || target.closest("input, select, textarea, summary, [contenteditable]")) return;
+  if (event.key === "Escape" && (state === "running" || state === "done")) {
+    event.preventDefault();
+    restart();
+    return;
+  }
+  if ((event.key === "Enter" || event.key === " ") && state === "done" && !target.closest("button, a")) {
+    event.preventDefault();
+    startMeasure();
+  }
 });
 element("lab-retry").addEventListener("click", retry);
 document.addEventListener("keydown", (event): void => {
@@ -871,6 +946,7 @@ element("lab-show-hint").addEventListener("click", (): void => {
 });
 for (const button of modeButtons) button.addEventListener("click", (): void => {
   if (mode !== "focus") returnMode = mode;
+  leaveMeasure();
   auto = false;
   mode = button.dataset.mode as TrainingMode;
   focus = "";
@@ -883,10 +959,12 @@ for (const control of [methodSelect, levelSelect, durationSelect, hintsSelect, m
   focus = "";
   // 入力方法・文章の種類が変わると自動メニューも変わる。秒数やヒントの手動調整は尊重する
   if (auto && (control === methodSelect || control === materialSelect)) applyPlan();
+  if (measuring && control === methodSelect) applyMeasure();
   prepare();
 });
 element("lab-target-review").addEventListener("click", (): void => {
   const previousLevel = level();
+  leaveMeasure();
   auto = false;
   mode = "review";
   levelSelect.value = String(previousLevel);
@@ -913,7 +991,7 @@ stage.addEventListener("keydown", (event): void => {
   if (event.defaultPrevented) return;
   if ((event.target !== stage && !(material() === "paragraph" && event.target === element("lab-prompt"))) || state !== "running" || mode === "ime" || method() !== "keyboard" || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
   if (event.key === "Escape") {
-    if (mode !== "focus") { event.preventDefault(); pause(); }
+    if (mode !== "focus" && !measuring) { event.preventDefault(); pause(); }
     return;
   }
   if (event.key === "Tab") return;

@@ -950,6 +950,7 @@ body[data-home] .subscribe-section { background: radial-gradient(ellipse at 50% 
 .lab-milestones [data-earned="true"] { border-color: #b6d6c63d; background: #b6d6c609; }
 .lab-milestones [data-earned="true"] strong { color: #cce5d8; }
 .lab-result-growth { margin-block: 14px; color: var(--lab-muted); font-size: 13px; line-height: 1.9; }
+.lab-measure-next { margin-block: 0 14px; padding: 10px 14px; border-left: 2px solid var(--color-brand-400); background: color-mix(in oklab, var(--color-brand-400) 8%, transparent); color: var(--lab-ink, #e3e2df); font-size: 13px; line-height: 1.8; }
 .lab-result-milestone { border-left: 2px solid #d4c3a5; padding: 12px 16px; color: #eeddbb; background: #d4c3a50b; font-size: 13px; }
 .lab-result[data-celebrate="true"] { animation: lab-achievement 1.5s ease-out; }
 @keyframes lab-achievement { from { box-shadow: 0 0 60px #b6d6c633; } to { box-shadow: 0 0 0 #b6d6c600; } }
