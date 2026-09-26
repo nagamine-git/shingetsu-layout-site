@@ -8,8 +8,8 @@ interface EmailPayload {
 
 interface ContactPayload {
   email: string;
-  segmentId: string;
-  properties: Record<string, string>;
+  /** 任意。指定したときだけセグメントに追加する（Resend の API ではセグメントは必須ではない） */
+  segmentId?: string;
 }
 
 /** Resend からのエラー。上流のステータスを保持し、呼び出し側が原因を切り分けられるようにする。 */
@@ -38,10 +38,14 @@ export function sendEmail(apiKey: string, payload: EmailPayload): Promise<void> 
   return resendPost(apiKey, "/emails", payload);
 }
 
+/**
+ * POST /contacts。必須は email のみ。
+ * セグメントは `segments: [{ id }]` の配列で渡す（旧実装の `segment_id` は現行 API に存在しない）。
+ * https://resend.com/docs/api-reference/contacts/create-contact
+ */
 export function createContact(apiKey: string, payload: ContactPayload): Promise<void> {
   return resendPost(apiKey, "/contacts", {
     email: payload.email,
-    segment_id: payload.segmentId,
-    properties: payload.properties,
+    ...(payload.segmentId ? { segments: [{ id: payload.segmentId }] } : {}),
   });
 }

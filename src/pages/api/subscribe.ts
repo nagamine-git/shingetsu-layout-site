@@ -6,8 +6,8 @@ import { verifyTurnstile } from "../../lib/turnstile";
 import { ResendError, createContact, sendEmail } from "../../lib/resend";
 import { EMAIL_RE, jsonRes } from "../../lib/api";
 
+// 互換のため preregister も受理する（フォームからは newsletter 固定）
 const VALID_TYPES = ["newsletter", "preregister"] as const;
-type SubscribeType = (typeof VALID_TYPES)[number];
 
 export const POST: APIRoute = async ({ request }) => {
   let body: unknown;
@@ -34,20 +34,16 @@ export const POST: APIRoute = async ({ request }) => {
   const segmentId = cfEnv["RESEND_SEGMENT_ID"] ?? "";
   const mailFrom = cfEnv["MAIL_FROM"] ?? "";
 
-  // 未設定のまま Resend を叩くと 401/422 になって原因が分かりにくいので、先に切り分ける
-  if (!resendApiKey || !segmentId) {
-    const missing = !resendApiKey && !segmentId ? "both" : !resendApiKey ? "key" : "segment";
-    console.error("Subscribe not configured:", { missing });
-    return jsonRes({ error: "not_configured", missing }, 503);
+  // 未設定のまま Resend を叩くと 401 になって原因が分かりにくいので、先に切り分ける。
+  // セグメントは Resend の API では任意なので、未設定でも登録は受け付ける
+  if (!resendApiKey) {
+    console.error("Subscribe not configured: RESEND_API_KEY is missing");
+    return jsonRes({ error: "not_configured", missing: "key" }, 503);
   }
 
   // 購読の本体はコンタクト作成。ここが失敗したときだけ登録失敗として扱う
   try {
-    await createContact(resendApiKey, {
-      email,
-      segmentId,
-      properties: { type: type as SubscribeType, subscribed_at: new Date().toISOString() },
-    });
+    await createContact(resendApiKey, { email, segmentId });
   } catch (err) {
     const status = err instanceof ResendError ? err.status : 0;
     console.error("Subscribe contact error:", err);
