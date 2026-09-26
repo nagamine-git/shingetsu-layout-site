@@ -4,7 +4,7 @@ import { isLongMarkInput, matchesTrainingCharacter } from "./longMark";
 import { TrainingAudio, type BgmPreset, type KeySound } from "./trainingAudio";
 import { growthSeries, progressMilestones } from "./trainingProgress";
 import { TrainingProgressView } from "./trainingProgressView";
-import { atcEstimate, bestKeystrokeRate, conversionRatio, keystrokeRate, podiumGap } from "./trainingAtc";
+import { bestKeystrokeRate, keystrokeRate } from "./trainingRate";
 import { measureWeakShare, planMeasure, planSession, type MeasurePlan, type SessionPlan } from "./trainingPlan";
 import { drillChanges, drillDuration, keyHeat, pairLabel, selectDrillPassages, sprintAdvice, sprintDuration, sprintTarget, weakTargets, type DrillTarget } from "./trainingDrill";
 import layoutData from "../data/layout.json";
@@ -711,7 +711,7 @@ function finish(interrupted: boolean, now = performance.now(), showResult = true
     window.scrollTo({ top: 0, behavior: "instant" });
     resultPanel.focus({ preventScroll: true });
   } else if ((!interrupted || mode === "focus") && !document.hidden) { resultPanel.focus({ preventScroll: true }); resultPanel.scrollIntoView({ block: "nearest" }); }
-  renderAtc(result);
+  renderRate(result);
   if (measuring) { renderMeasureNext(result, interrupted); renderLoopGrowth(result); }
   if (!interrupted && mode !== "focus" && !measuring) beginRest();
 }
@@ -730,23 +730,16 @@ function restart(): void {
   status("同じ課題を最初から。次の打鍵から計測します。", true);
 }
 
-// ATC の単位で見る：指の速さ（打/秒）と変換後の字/分。タップは PC と比べないので出さない
-function renderAtc(result: TrainingResult): void {
-  const line = element("lab-atc");
-  line.hidden = !timed() || result.method === "touch" || result.duration < 15;
+// 指の速さ（打/秒）。IME は物理打鍵を記録しないので、タップは PC と比べないので出さない
+function renderRate(result: TrainingResult): void {
+  const line = element("lab-rate");
+  line.hidden = !timed() || result.method !== "keyboard" || result.duration < 15;
   if (line.hidden) return;
+  const best = bestKeystrokeRate(profile, "keyboard");
   const main = document.createElement("strong");
+  main.textContent = `指の速さ ${keystrokeRate(result).toFixed(1)}打/秒${best > 0 ? `（自己ベスト ${best.toFixed(1)}）` : ""}`;
   const note = document.createElement("small");
-  if (result.method === "ime") {
-    main.textContent = `ATCと同じ単位：変換後 ${Math.round(result.cpm)}字/分 · ${podiumGap(Math.round(result.cpm))}`;
-    note.textContent = "IME で変換まで打った実測値です。2026年の部門・表彰の規定は未発表なので、2025年の記録を参考線にしています。";
-  } else {
-    const rate = keystrokeRate(result);
-    const best = bestKeystrokeRate(profile, result.method);
-    const estimate = atcEstimate(result.cpm, conversionRatio(run.passages.slice(0, run.passageIndex + 1)));
-    main.textContent = `指の速さ ${rate.toFixed(1)}打/秒${best > 0 ? `（自己ベスト ${best.toFixed(1)}）` : ""} · ATC換算の目安 ${estimate}字/分 · ${podiumGap(estimate)}`;
-    note.textContent = "換算は、この回の文の「漢字かな交じりの字数 ÷ 読みの字数」を掛けた値です。変換の時間を含まないので、上限寄りの目安。実際の値は入力方法「導入済みIME」で測れます。";
-  }
+  note.textContent = "ミスも含めた押下回数 ÷ 秒。";
   line.replaceChildren(main, note);
 }
 
