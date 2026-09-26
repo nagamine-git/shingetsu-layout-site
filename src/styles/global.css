@@ -957,9 +957,9 @@ body[data-home] .subscribe-section { background: radial-gradient(ellipse at 50% 
 .training-lab[data-measuring="true"]:is([data-state="done"], [data-state="rest"]) :is(.lab-manual, .lab-soundbar, .lab-workspace, .lab-records-wrap, .lab-explainer-wrap) { display: none; }
 .training-lab[data-measuring="true"][data-state="done"] .lab-result { margin: 20px auto 0; width: min(100%, 900px); }
 .training-page:has(.training-lab[data-measuring="true"][data-state="done"]) :is(.lab-heading, .lab-explainer-wrap) { display: none; }
-.lab-atc { margin-block: 0 14px; color: var(--lab-muted); font-size: 12px; line-height: 1.8; }
-.lab-atc strong { display: block; color: var(--lab-ink, #e3e2df); font-size: 14px; font-weight: 600; }
-.lab-atc small { display: block; font-size: 12px; }
+.lab-rate { margin-block: 0 14px; color: var(--lab-muted); font-size: 12px; line-height: 1.8; }
+.lab-rate strong { display: block; color: var(--lab-ink, #e3e2df); font-size: 14px; font-weight: 600; }
+.lab-rate small { display: block; font-size: 12px; }
 .lab-loop-growth { margin: 0 0 18px; }
 .lab-loop-growth figcaption { margin-bottom: 6px; color: var(--lab-ink, #e3e2df); font-size: 13px; }
 .lab-loop-growth svg { display: block; width: 100%; height: auto; }

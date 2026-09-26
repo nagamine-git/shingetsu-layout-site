@@ -129,7 +129,7 @@ try {
     tag: document.getElementById("lab-result-tag").textContent,
     rest: !document.getElementById("lab-rest").hidden,
     report: !document.getElementById("lab-drill-report").hidden,
-    atc: document.getElementById("lab-atc").hidden ? "" : document.getElementById("lab-atc").textContent,
+    rate: document.getElementById("lab-rate").hidden ? "" : document.getElementById("lab-rate").textContent,
     growth: document.getElementById("lab-loop-growth").hidden ? 0 : document.querySelectorAll("#lab-loop-chart circle").length,
   }));
   const typeOne = () => loop.evaluate(async () => {
@@ -147,7 +147,7 @@ try {
   view = await snapshot();
   check(view.state === "done" && !view.rest && view.tag.startsWith("定点"), `測るループ: 60秒で結果、休憩の強制なし (${view.tag})`);
   check(view.next.includes("別の文") && view.next.includes("Enter"), "測るループ: 次の一本と操作を案内");
-  check(/指の速さ [\d.]+打\/秒/.test(view.atc) && view.atc.includes("ATC換算の目安") && view.atc.includes("かな系3位"), `ATC 換算: 打/秒と表彰ラインまでの差 (${view.atc.slice(0, 60)}…)`);
+  check(/指の速さ [\d.]+打\/秒/.test(view.rate), `指の速さ: 打/秒を表示 (${view.rate.slice(0, 40)})`);
   await loop.keyboard.press("Enter");
   await loop.clock.runFor(300);
   view = await snapshot();
