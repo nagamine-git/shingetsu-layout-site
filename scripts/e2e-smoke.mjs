@@ -5,6 +5,7 @@
 //   1. トップ: JS エラーなし・月の描画 (WebGL or SVG) が初期化される
 //   2. 練習室: 記録を仕込んだ状態で弱点ドリルが弱点を選び、45 秒走らせずとも打鍵→中断→結果が出る
 //   3. 練習室: 高速化 15 秒（疾走）の目標が自己ベスト +8% で表示される
+//   4. 練習室: 「測る」のループ（定点 → Enter で別の文 → Esc で同じ文 → Space で次）。時計は早送り
 // 細かい採点ロジックは vitest（src/lib/__tests__）で担保する。
 import { spawn, execFileSync } from "node:child_process";
 import { chromium } from "playwright-core";
@@ -113,6 +114,56 @@ try {
   const measureState = await lab.evaluate(() => ({ state: document.getElementById("training-lab").dataset.state, mode: document.getElementById("training-lab").dataset.mode }));
   check(measureState.state === "running" && measureState.mode === "benchmark", "測る: 固定文の定点測定が始まる");
   await stopRun();
+
+  // 5. 測るのループ（時計を早送りして 60 秒を再現）: 定点 → Enter で別の文 → Esc で同じ文 → 弱点の変化 → Space で次
+  const loop = await context.newPage();
+  await loop.clock.install();
+  await loop.goto(`${base}/practice/`, { waitUntil: "load" });
+  await loop.clock.runFor(800);
+  const snapshot = () => loop.evaluate(() => ({
+    state: document.getElementById("training-lab").dataset.state,
+    mode: document.getElementById("training-lab").dataset.mode,
+    label: document.getElementById("lab-session-label").textContent,
+    prompt: document.getElementById("lab-prompt").textContent.trim(),
+    next: document.getElementById("lab-measure-next").hidden ? "" : document.getElementById("lab-measure-next").textContent,
+    tag: document.getElementById("lab-result-tag").textContent,
+    rest: !document.getElementById("lab-rest").hidden,
+    report: !document.getElementById("lab-drill-report").hidden,
+  }));
+  const typeOne = () => loop.evaluate(async () => {
+    const training = await import("/src/lib/training.ts");
+    const stage = document.getElementById("lab-stage");
+    const key = training.tokenize(document.getElementById("lab-prompt").textContent.trim())[0].paths[0][0];
+    stage.dispatchEvent(new KeyboardEvent("keydown", { key, code: /[a-z]/.test(key) ? `Key${key.toUpperCase()}` : "Semicolon", bubbles: true }));
+  });
+  await loop.click("#lab-measure");
+  await loop.clock.runFor(300);
+  let view = await snapshot();
+  check(view.state === "running" && view.mode === "benchmark" && view.label.includes("定点"), `測るループ: その日の最初は定点 (${view.label})`);
+  await typeOne();
+  await loop.clock.runFor(61_000);
+  view = await snapshot();
+  check(view.state === "done" && !view.rest && view.tag.startsWith("定点"), `測るループ: 60秒で結果、休憩の強制なし (${view.tag})`);
+  check(view.next.includes("別の文") && view.next.includes("Enter"), "測るループ: 次の一本と操作を案内");
+  await loop.keyboard.press("Enter");
+  await loop.clock.runFor(300);
+  view = await snapshot();
+  check(view.state === "running" && view.mode === "speed" && view.label.includes("別の文"), `測るループ: Enter で別の文の60秒 (${view.label})`);
+  const firstPrompt = view.prompt;
+  await typeOne();
+  await loop.keyboard.press("Escape");
+  await loop.clock.runFor(300);
+  view = await snapshot();
+  check(view.state === "running" && view.prompt === firstPrompt, "測るループ: Esc で同じ文を最初から");
+  await typeOne();
+  await loop.clock.runFor(61_000);
+  view = await snapshot();
+  check(view.state === "done" && view.report, "測るループ: 混ぜた弱点の変化を結果に表示");
+  await loop.keyboard.press(" ");
+  await loop.clock.runFor(300);
+  view = await snapshot();
+  check(view.state === "running" && view.mode === "speed", "測るループ: Space でも次の一本");
+  await loop.close();
 
   check(errors.length === 0, `JS エラーなし${errors.length ? `: ${errors.join(" | ")}` : ""}`);
 } finally {

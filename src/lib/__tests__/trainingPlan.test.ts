@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { curriculum } from "../../data/trainingCorpus";
 import { freshProfile, type TrainingProfile, type TrainingResult } from "../training";
-import { planSession } from "../trainingPlan";
+import { fixedSignature, planMeasure, planSession } from "../trainingPlan";
 
 const now = 1_000_000_000_000;
 const allKana = curriculum.map((stage): string => stage.kana).join("");
@@ -72,5 +72,42 @@ describe("planSession", () => {
     profile.results.push(result({ accuracy: 97 }), result({ mode: "benchmark", signature: "benchmark:keyboard:60:5:v1:longmark-v1", date: new Date(now - 5_000).toISOString() }));
     expect(planSession(profile, "keyboard", now).duration).toBe(15);
     expect(planSession(profile, "touch", now).mode).toBe("learn");
+  });
+});
+
+describe("planMeasure", () => {
+  const fixed = (overrides: Partial<TrainingResult> = {}): TrainingResult => result({ mode: "benchmark", signature: "benchmark:keyboard:60:5:v1:longmark-v1", ...overrides });
+
+  it("starts each day with the fixed passages, then switches to other passages", () => {
+    const profile = mastered();
+    expect(planMeasure(profile, "keyboard", now)).toMatchObject({ kind: "anchor", mode: "benchmark" });
+    profile.results.push(fixed());
+    expect(planMeasure(profile, "keyboard", now)).toMatchObject({ kind: "fresh", mode: "speed" });
+  });
+
+  it("does not count yesterday's or an interrupted fixed run as today's anchor", () => {
+    const profile = mastered();
+    profile.results.push(fixed({ date: new Date(now - 36 * 3600_000).toISOString() }));
+    profile.results.push(fixed({ interrupted: true }));
+    expect(planMeasure(profile, "keyboard", now).kind).toBe("anchor");
+  });
+
+  it("mixes in the learner's own weak targets on the non-fixed runs", () => {
+    const profile = mastered();
+    profile.keyboard["ぬ"] = skill(900);
+    profile.results.push(fixed());
+    expect(planMeasure(profile, "keyboard", now).targets.map((target): string => target.id)).toEqual(["ぬ"]);
+  });
+
+  it("anchors IME separately with the ime signature and never picks keystroke targets", () => {
+    const profile = mastered();
+    profile.results.push(fixed());
+    expect(planMeasure(profile, "ime", now)).toMatchObject({ kind: "anchor", mode: "ime" });
+    profile.results.push(fixed({ mode: "ime", method: "ime", signature: fixedSignature("ime") }));
+    expect(planMeasure(profile, "ime", now)).toMatchObject({ kind: "fresh", mode: "ime", targets: [] });
+  });
+
+  it("points beginners to 練習する without blocking the measurement", () => {
+    expect(planMeasure(freshProfile(), "keyboard", now).reason).toContain("練習する");
   });
 });
