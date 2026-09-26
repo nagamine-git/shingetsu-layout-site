@@ -27,6 +27,23 @@ describe("weakTargets", () => {
     expect(targets[0].reason).toContain("倍遅い");
   });
 
+  it("treats a ☆゛ shortcut such as じゃ as one target and finds passages that contain it", () => {
+    const profile = freshProfile();
+    for (const kana of "はかとたくうき") profile.keyboard[kana] = skill(300);
+    profile.keyboard["じゃ"] = skill(700);
+    const targets = weakTargets(profile, "keyboard", 0);
+    expect(targets.map((target): string => target.id)).toEqual(["じゃ"]);
+    // 得意な文を混ぜない設定（interleave 0）で、じゃ を含む文が尽きるまでは、それだけが選ばれる
+    const picked = selectDrillPassages(profile, targets, () => .5, 0, 10);
+    expect(picked.length).toBeGreaterThan(0);
+    expect(picked.every((passage): boolean => passage.reading.includes("じゃ"))).toBe(true);
+  });
+
+  it("covers every ☆゛ shortcut in the corpus except the practically unused ぢゃ", () => {
+    const tokens = new Set(trainingCorpus.flatMap((passage): string[] => tokenize(passage.reading).map((token): string => token.text)));
+    for (const kana of ["ぴょ", "びょ", "じょ", "ぎょ", "でぃ", "ぴゅ", "びゅ", "じゅ", "ぎゅ", "でゅ", "ぴゃ", "びゃ", "じゃ", "ぎゃ", "みゃ", "みゅ", "みょ"]) expect(tokens, kana).toContain(kana);
+  });
+
   it("picks kana with low hint-free accuracy", () => {
     const profile = freshProfile();
     for (const kana of "はかとたくうき") profile.keyboard[kana] = skill(300);

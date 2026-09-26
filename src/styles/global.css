@@ -950,7 +950,23 @@ body[data-home] .subscribe-section { background: radial-gradient(ellipse at 50% 
 .lab-milestones [data-earned="true"] { border-color: #b6d6c63d; background: #b6d6c609; }
 .lab-milestones [data-earned="true"] strong { color: #cce5d8; }
 .lab-result-growth { margin-block: 14px; color: var(--lab-muted); font-size: 13px; line-height: 1.9; }
-.lab-measure-next { margin-block: 0 14px; padding: 10px 14px; border-left: 2px solid var(--color-brand-400); background: color-mix(in oklab, var(--color-brand-400) 8%, transparent); color: var(--lab-ink, #e3e2df); font-size: 13px; line-height: 1.8; }
+.lab-measure-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-block: 0 14px; padding: 12px 14px; border-left: 2px solid var(--color-brand-400); background: color-mix(in oklab, var(--color-brand-400) 8%, transparent); }
+.lab-measure-bar[hidden] { display: none; }
+.lab-measure-next { flex: 1 1 320px; margin: 0; color: var(--lab-ink, #e3e2df); font-size: 13px; line-height: 1.8; }
+/* 測るのループ：打ち終わったら、その場で結果。見出し・設定・課題欄を隠し、結果を画面の上に出す */
+.training-lab[data-measuring="true"]:is([data-state="done"], [data-state="rest"]) :is(.lab-manual, .lab-soundbar, .lab-workspace, .lab-records-wrap, .lab-explainer-wrap) { display: none; }
+.training-lab[data-measuring="true"][data-state="done"] .lab-result { margin: 20px auto 0; width: min(100%, 900px); }
+.training-page:has(.training-lab[data-measuring="true"][data-state="done"]) :is(.lab-heading, .lab-explainer-wrap) { display: none; }
+.lab-atc { margin-block: 0 14px; color: var(--lab-muted); font-size: 12px; line-height: 1.8; }
+.lab-atc strong { display: block; color: var(--lab-ink, #e3e2df); font-size: 14px; font-weight: 600; }
+.lab-atc small { display: block; font-size: 12px; }
+.lab-loop-growth { margin: 0 0 18px; }
+.lab-loop-growth figcaption { margin-bottom: 6px; color: var(--lab-ink, #e3e2df); font-size: 13px; }
+.lab-loop-growth svg { display: block; width: 100%; height: auto; }
+.lab-loop-growth text { fill: var(--lab-muted); font-size: 11px; }
+.lab-loop-median { fill: none; stroke: var(--color-brand-400); stroke-width: 2; }
+.lab-loop-dot { fill: #b6d6c6; }
+.lab-loop-dot-muted { fill: none; stroke: #b6d6c68c; stroke-width: 1.5; }
 .lab-result-milestone { border-left: 2px solid #d4c3a5; padding: 12px 16px; color: #eeddbb; background: #d4c3a50b; font-size: 13px; }
 .lab-result[data-celebrate="true"] { animation: lab-achievement 1.5s ease-out; }
 @keyframes lab-achievement { from { box-shadow: 0 0 60px #b6d6c633; } to { box-shadow: 0 0 0 #b6d6c600; } }
