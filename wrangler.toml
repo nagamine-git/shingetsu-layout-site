@@ -2,3 +2,8 @@ name = "shingetsu-layout-site"
 compatibility_date = "2024-11-18"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./dist"
+
+[[d1_databases]]
+binding = "COUNTER_DB"
+database_name = "shingetsu-counter"
+database_id = "174cac1a-5455-41c3-86bc-969a30a34a0c"
