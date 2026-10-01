@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import SiteHeader from "../components/SiteHeader.astro";
+import VisitorCounter from "../components/VisitorCounter.astro";
 
 interface Props {
   title: string;
@@ -120,6 +121,7 @@ const websiteJsonLd = {
             GitHub
           </a>
         </p>
+        <VisitorCounter />
       </div>
     </footer>
 

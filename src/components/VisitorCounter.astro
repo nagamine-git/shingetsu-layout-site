@@ -1,0 +1,146 @@
+---
+// フッターの訪問者カウンター。ページ読込のたびに POST /api/hit で 1 回数え、返った累計を「N 回目の観測」と表示する。
+// COUNTER_DB が未設定・API 失敗のときは hidden のまま（何も出さない）。
+// 月の相は今日の日付から決まり、カウントアップに合わせて新月から今夜の形まで満ちていく。
+const R = 8; // 月の半径。SVG は余白 2 を足した 20x20
+---
+
+<p class="visitor-counter" data-visitor-counter hidden>
+  <svg class="visitor-moon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+    <title data-visitor-moon-title></title>
+    <circle cx="10" cy="10" r={R} class="visitor-moon-dark"></circle>
+    <path class="visitor-moon-lit" transform="translate(2 2)" d="" data-visitor-moon-radius={R}></path>
+    <circle cx="10" cy="10" r={R} class="visitor-moon-rim"></circle>
+  </svg>
+  <span class="visitor-text" aria-hidden="true">
+    <span class="visitor-number" data-visitor-number>0</span><span class="visitor-label">回目の観測</span>
+  </span>
+  <span class="sr-only">累計 <span data-visitor-total></span> 回の訪問</span>
+</p>
+
+<style>
+  .visitor-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: 20px 0 0;
+    line-height: 1;
+  }
+  .visitor-moon {
+    flex: none;
+    filter: drop-shadow(0 0 5px rgb(241 237 229 / 0.26));
+  }
+  .visitor-moon-dark { fill: #17191c; }
+  .visitor-moon-lit { fill: #e8e3d5; }
+  .visitor-moon-rim { fill: none; stroke: #8f9296; stroke-opacity: 0.55; stroke-width: 0.8; }
+  .visitor-text { display: inline-flex; align-items: baseline; gap: 8px; }
+  /* 明朝（Shingetsu Mincho）には tnum が無く数字の幅がまちまちなので、1 桁ずつ固定幅のセルに入れて桁を揃える */
+  .visitor-number {
+    --digit-w: 0.66em;
+    --comma-w: 0.32em;
+    display: inline-block;
+    text-align: right;
+    white-space: nowrap;
+    font: 500 16px/1 var(--font-editorial);
+    font-variant-numeric: tabular-nums;
+    color: var(--lunar-white);
+  }
+  .visitor-number :global(.d),
+  .visitor-number :global(.c) { display: inline-block; text-align: center; }
+  .visitor-number :global(.d) { width: var(--digit-w); }
+  .visitor-number :global(.c) { width: var(--comma-w); }
+  .visitor-label { font-size: 11px; letter-spacing: 0.16em; color: var(--color-slate-500); }
+  @media (prefers-reduced-motion: no-preference) {
+    .visitor-counter[data-state="ready"] { animation: visitor-arrive 0.9s var(--lunar-ease) both; }
+    @keyframes visitor-arrive { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  }
+</style>
+
+<script>
+  import { countUpProgress, countUpValue, formatCount } from "../lib/counterDisplay";
+  import { moonPhase, moonPhaseName, moonPhasePath } from "../lib/moonPhase";
+
+  const DURATION_MS = 1400;
+
+  async function hit(): Promise<number | null> {
+    try {
+      // keepalive: 読み込み直後にページを離れても数えられるように。
+      // 本文なしの POST は Astro の checkOrigin（Origin の一致が必須）に掛かるので、JSON として送る
+      const res = await fetch("/api/hit", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+        keepalive: true,
+      });
+      if (!res.ok) return null;
+      const { count } = (await res.json()) as { count?: unknown };
+      return typeof count === "number" && Number.isSafeInteger(count) && count >= 0 ? count : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function init(root: HTMLElement) {
+    const count = await hit();
+    if (count === null) return; // 未設定・失敗: hidden のまま
+
+    const number = root.querySelector<HTMLElement>("[data-visitor-number]");
+    const lit = root.querySelector<SVGPathElement>(".visitor-moon-lit");
+    const total = root.querySelector<HTMLElement>("[data-visitor-total]");
+    const moonTitle = root.querySelector<SVGTitleElement>("[data-visitor-moon-title]");
+    if (!number || !lit || !total) return;
+
+    const radius = Number(lit.dataset.visitorMoonRadius);
+    const phase = moonPhase(new Date());
+    total.textContent = formatCount(count);
+    if (moonTitle) moonTitle.textContent = `今夜の月: ${moonPhaseName(phase)}`;
+    // 最終的な桁数ぶんの幅を先に確保して、カウントアップ中に周りが動かないようにする
+    const finalText = formatCount(count);
+    const commas = finalText.split(",").length - 1;
+    number.style.minWidth = `calc(${finalText.length - commas} * var(--digit-w) + ${commas} * var(--comma-w))`;
+
+    const paint = (progress: number) => {
+      number.replaceChildren(
+        ...[...formatCount(countUpValue(progress, count))].map((char) => {
+          const cell = document.createElement("span");
+          cell.className = char === "," ? "c" : "d";
+          cell.textContent = char;
+          return cell;
+        }),
+      );
+      lit.setAttribute("d", moonPhasePath(phase * progress, radius));
+    };
+    const play = () => {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const progress = countUpProgress(now - start, DURATION_MS);
+        paint(progress);
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    };
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    paint(reduceMotion ? 1 : 0);
+    root.hidden = false;
+    root.dataset.state = "ready";
+    if (reduceMotion) return;
+
+    // フッターは長いページの下にあるので、目に入ったときに数え始める（初回表示の 1 回だけ）
+    if (!("IntersectionObserver" in window)) return play();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        play();
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(root);
+  }
+
+  const root = document.querySelector<HTMLElement>("[data-visitor-counter]");
+  if (root) void init(root);
+</script>
