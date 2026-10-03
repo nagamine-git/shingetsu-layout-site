@@ -46,7 +46,7 @@ const allTags = [...new Set(posts.flatMap((p) => p.data.tags))];
           class="post-card rounded-xl border border-white/10 bg-[var(--color-surface-2)] p-6 hover:border-brand-500/30 transition-all duration-200 hover:-translate-y-0.5"
           data-tags={post.data.tags.join(",")}
         >
-          <a href={`/blog/${post.id}`} class="block">
+          <a href={`/blog/${post.id}/`} class="block">
             <div class="flex flex-wrap gap-2 mb-2">
               {post.data.tags.map((tag) => (
                 <span class="text-xs text-brand-400">#{tag}</span>

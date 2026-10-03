@@ -79,15 +79,6 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL} />
     <meta name="twitter:image:alt" content={ogImageAlt} />
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DDY9QM5CXR" is:inline></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-DDY9QM5CXR');
-    </script>
-
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//challenges.cloudflare.com" />
     <link rel="dns-prefetch" href="//static.cloudflareinsights.com" />
@@ -128,6 +119,10 @@ const websiteJsonLd = {
     <!-- AARRR 計測: track() ヘルパー + data-track 属性の汎用クリック計測 -->
     <script>
       import "../lib/reveal";
+      import { initAnalytics } from "../lib/analytics";
+
+      // GA は本番ホスト（shingetsu-layout.com / www）でだけ読み込む。それ以外は gtag も gtag.js も出さない。
+      initAnalytics(window.location.hostname, window, document);
 
       window.track = (name, params = {}) => {
         // gtag 未ロード（広告ブロック等）でも落ちないように optional chaining

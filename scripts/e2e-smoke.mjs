@@ -2,7 +2,7 @@
 //
 // 使い方: pnpm test:e2e   （ローカルの Chromium を使う。E2E_BROWSER=<path> で指定可）
 // 開発サーバーを 4399 番で起動し、以下を実機ブラウザで確認する:
-//   1. トップ: JS エラーなし・月の描画 (WebGL or SVG) が初期化される
+//   1. トップ: JS エラーなし・月の描画 (WebGL or SVG) が初期化される・localhost では GA を読み込まない
 //   2. 練習室: 記録を仕込んだ状態で弱点ドリルが弱点を選び、45 秒走らせずとも打鍵→中断→結果が出る
 //   3. 練習室: 高速化 15 秒（疾走）の目標が自己ベスト +8% で表示される
 //   4. 練習室: 「測る」のループ（定点 → Enter で別の文 → Esc で同じ文 → Space で次）。時計は早送り
@@ -39,11 +39,15 @@ try {
 
   // 1. トップ
   const home = await context.newPage();
+  const analyticsRequests = [];
+  home.on("request", (request) => { if (/googletagmanager\.com|google-analytics\.com/.test(request.url())) analyticsRequests.push(request.url()); });
   await home.goto(`${base}/`, { waitUntil: "load" });
   await home.waitForTimeout(1600);
   const moon = await home.evaluate(() => ({ renderer: document.querySelector(".eclipse")?.dataset.renderer ?? "svg", state: document.querySelector(".hero-art")?.dataset.state }));
   check(["webgl", "svg"].includes(moon.renderer), `トップ: 月の描画が初期化 (${moon.renderer})`);
   check(moon.state !== undefined, `トップ: 月の状態が公開されている (${moon.state})`);
+  const gtagLoaded = await home.evaluate(() => typeof window.gtag !== "undefined");
+  check(!gtagLoaded && analyticsRequests.length === 0, `トップ: localhost では GA を読み込まない (gtag=${gtagLoaded}, 外部リクエスト ${analyticsRequests.length} 件)`);
   await home.close();
 
   // 2. 弱点ドリル
