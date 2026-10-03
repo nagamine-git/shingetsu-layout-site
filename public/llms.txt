@@ -12,8 +12,8 @@
 ## 主要ページ
 
 - [トップページ](https://shingetsu-layout.com/) — 新月配列の概要、特徴、導入方法、よくある質問
-- [ブログ](https://shingetsu-layout.com/blog) — 技術記事・設計解説
-- [お問い合わせ](https://shingetsu-layout.com/contact) — 連絡先フォーム
+- [ブログ](https://shingetsu-layout.com/blog/) — 技術記事・設計解説
+- [お問い合わせ](https://shingetsu-layout.com/contact/) — 連絡先フォーム
 
 ## ブログ記事
 
