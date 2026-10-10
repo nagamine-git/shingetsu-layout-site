@@ -1,0 +1,20 @@
+<section id="using-shingetsu" class="usage-counter mx-auto max-w-3xl px-4 pb-16" aria-labelledby="usage-heading" data-usage-counter>
+  <div class="usage-panel text-center px-5 py-10 sm:px-8">
+    <h2 id="usage-heading" class="text-2xl text-white">新月、つかってます。</h2>
+    <p class="mt-3 text-sm text-slate-300">新月配列を使っている方は、よければひと押し。<br />登録なしで、使っていることだけを伝えられます。</p>
+    <p class="usage-count mt-6" aria-live="polite" aria-atomic="true" data-usage-count>申告件数を読み込み中…</p>
+    <p class="mt-1 text-xs text-slate-400" data-usage-scope hidden>ここは試験用の集計です。本番の申告件数には加わりません。</p>
+    <button type="button" class="button-primary mt-5" aria-describedby="usage-note usage-privacy" data-usage-button disabled>つかってます！</button>
+    <p class="usage-status mt-3 text-sm text-slate-300" role="status" data-usage-status></p>
+    <button type="button" class="usage-retry text-sm text-slate-300" data-usage-retry hidden>件数を読み直す</button>
+    <p id="usage-note" class="mt-4 text-xs leading-relaxed text-slate-400">匿名の自己申告件数です。実際の利用人数・アクティブユーザー数ではありません。<br />同じブラウザからは原則1件。別の端末・ブラウザや保存データの削除で重複することがあります。</p>
+    <p id="usage-privacy" class="mt-2 text-xs leading-relaxed text-slate-400">メール・ログインは不要。重複を防ぐためのランダムな申告キーだけを保存します。</p>
+    <noscript><p class="mt-3 text-sm text-slate-300">申告と件数の表示には JavaScript が必要です。</p></noscript>
+  </div>
+</section>
+
+<script>
+  import { initUsageCounter } from "../lib/usageCounterClient";
+  const root = document.querySelector<HTMLElement>("[data-usage-counter]");
+  if (root) void initUsageCounter(root);
+</script>

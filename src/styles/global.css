@@ -576,6 +576,12 @@ main :is(h1, h2, h3, h4) { font-weight: 500; }
 .td-key:active, .td-key.scale-95 { box-shadow: inset 0 1px #ffffff0b, 0 0 18px #8aaece30; }
 .github-support { background: linear-gradient(120deg, #1b1c1c, #111214); border: 1px solid #cebfa42e; border-radius: 5px; padding: 40px 32px; }
 .github-support h2 { font-weight: 500; letter-spacing: .02em; }
+.usage-panel { background: linear-gradient(120deg, #1b1c1c, #111214); border: 1px solid var(--lunar-line); border-radius: var(--radius-panel); }
+.usage-panel h2 { font-weight: 500; letter-spacing: .035em; }
+.usage-count { color: var(--lunar-white); font-variant-numeric: tabular-nums; font-size: 18px; }
+.usage-status { min-height: 1.8em; }
+.usage-panel .button-primary:disabled { opacity: .65; transform: none; box-shadow: none; }
+.usage-retry { min-height: 44px; padding: 8px 12px; text-decoration: underline; text-underline-offset: .3em; }
 .install-section .page-width { max-width: 900px; }
 .os-panel > div { border-radius: 4px; padding: 28px; border-color: #c7b69926; background: #131517; }
 .os-panel > div > div > span { background: transparent; border: 1px solid #b8ac944d; color: #c5b99f; border-radius: 50%; width: 32px; height: 32px; font-family: var(--font-sans); font-weight: 500; }

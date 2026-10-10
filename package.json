@@ -11,6 +11,7 @@
     "check": "astro check",
     "test": "vitest run",
     "test:e2e": "node scripts/e2e-smoke.mjs",
+    "test:usage": "node scripts/usage-e2e.mjs",
     "lint": "eslint src --ext .ts,.astro",
     "format": "prettier --write src"
   },
