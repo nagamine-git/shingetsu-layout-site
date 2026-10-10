@@ -54,6 +54,17 @@ Cloudflare Pages に接続し、以下を設定する。
 
 ## グロース運用
 
+### 匿名の利用申告
+
+トップの「つかってます！」はボタンを押した自己申告だけを集計する。訪問カウンター、GA、ニュースレター登録とは独立し、実利用人数・アクティブユーザー数を意味しない。
+
+- 既存の `COUNTER_DB`（D1 `shingetsu-counter`）の `usage_declarations` テーブルを使用。初回アクセスで空のテーブルを作成し、既存訪問件数や初期値を取り込まない。
+- 押した時点でブラウザの localStorage に UUID を保存し、D1 はその SHA-256 と集計区分だけを永続保存する。IP、氏名、メール、User-Agent、時刻はこの機能では保存・ログ出力しない。通常の通信は既存の Cloudflare を経由し、サービス側の通常のログまで匿名化を保証するものではない。新しい解析イベントや外部サービスは追加しない。
+- `(scope, token_hash)` の UNIQUE 制約で連打・同時送信・応答消失後の再送を同じ1件にする。ブラウザの保存不可時は送信を止める。端末・ブラウザ変更や保存データの削除、意図的な別キー生成までは防がない。
+- `shingetsu-layout.com` / `www.shingetsu-layout.com` のみ `production`。Pages のプレビュー・pages.dev・localhost は `test` を使い画面にも試験用と表示する。試験件数は本番に混ざらない。本番で試験申告をしない。
+- 読込・保存失敗は HTTP 503 / `count: null` とし、UI に確認不能を表示する。表示件数はサーバーの集計値だけを使う。
+- 公開は既存の `.github/workflows/deploy.yml`（PR でテスト・ビルド・プレビュー、main マージで本番）。新規契約・認証・binding 追加は不要。ローカル確認は `pnpm build && pnpm test:usage`（一時ディレクトリのローカル D1 のみ）。
+
 - [KPI ツリーと月・週・日 PDCA](GROWTH-OPERATIONS.md)
 - [基準値・実験記録](GROWTH.md)
 - `pnpm --silent growth:snapshot`: GitHub の Star・トラフィックを取得
