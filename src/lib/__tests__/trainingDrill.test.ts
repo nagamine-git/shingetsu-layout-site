@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import layoutData from "../../data/layout.json";
 import { trainingCorpus } from "../../data/trainingCorpus";
 import { freshProfile, tokenize, type TrainingProfile, type TrainingResult } from "../training";
 import { drillChanges, keyHeat, selectDrillPassages, sprintAdvice, sprintTarget, weakTargets } from "../trainingDrill";
@@ -39,9 +40,17 @@ describe("weakTargets", () => {
     expect(picked.every((passage): boolean => passage.reading.includes("じゃ"))).toBe(true);
   });
 
-  it("covers every ☆゛ shortcut in the corpus except the practically unused ぢゃ", () => {
+  it("covers every ☆゛ shortcut of v9.0 (the ぴ・び・じ・ぎ・み・ち columns) in the corpus", () => {
     const tokens = new Set(trainingCorpus.flatMap((passage): string[] => tokenize(passage.reading).map((token): string => token.text)));
-    for (const kana of ["ぴょ", "びょ", "じょ", "ぎょ", "でぃ", "ぴゅ", "びゅ", "じゅ", "ぎゅ", "でゅ", "ぴゃ", "びゃ", "じゃ", "ぎゃ", "みゃ", "みゅ", "みょ"]) expect(tokens, kana).toContain(kana);
+    const shortcuts = layoutData.layers[3].keys.flat().filter(Boolean);
+    expect(shortcuts).toHaveLength(18);
+    for (const kana of shortcuts) expect(tokens, kana).toContain(kana);
+  });
+
+  it("still teaches でぃ・でゅ as ordinary kana now that they have no ☆゛ shortcut (ぢゃ is left out as practically unused)", () => {
+    const tokens = new Set(trainingCorpus.flatMap((passage): string[] => tokenize(passage.reading).map((token): string => token.text)));
+    for (const kana of ["でぃ", "でゅ"]) expect(tokens, kana).toContain(kana);
+    expect(tokens).not.toContain("ぢゃ");
   });
 
   it("picks kana with low hint-free accuracy", () => {

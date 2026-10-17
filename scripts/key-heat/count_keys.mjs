@@ -4,9 +4,10 @@
 //   node scripts/key-heat/count_keys.mjs <corpus.kana.txt>
 //
 // 新月配列:
-// - 変換表は src/data/romantable.json（配布テーブルと同一）。かな → 打鍵列は「同じかなを出す最短の列」を採る。
+// - 変換表は src/data/romantable.json の table（配布テーブルの本体の行）。かな → 打鍵列は「同じかなを出す最短の列」を採る。
+//   aliases（- kk dd）と completions（IME が行き止まりで止まらないための補完行）は打鍵列ではないので読まない。
 // - トークン化は先頭 2 文字までの最長一致（しゃ・じゃ などの 2 かなエントリを優先）。
-// - ー は ★p で数える（IME 既定の `-` でも打てるが、英字 3 行の外なので採らない）。
+// - ー は ★p で数える（aliases の `-` でも打てるが、英字 3 行の外なので採らない）。
 // ローマ字入力（QWERTY）:
 // - 各かなに対して Google 日本語入力で有効な最短のローマ字（し=si、じゃ=ja、ふぁ=fa など）。
 // - ん は次が母音・や行・な行・文末なら nn、それ以外は n。っ は次の子音を重ねる（次が母音なら xtu）。
@@ -30,7 +31,6 @@ const kanaLegend = layout.layers[1].keys;
 // ---------- 新月配列: かな → 最短の打鍵列 ----------
 const shingetsuSeq = new Map();
 for (const [seq, kana] of Object.entries(roman)) {
-  if (kana === "ー" && seq === "-") continue; // ー は ★p で数える
   const cur = shingetsuSeq.get(kana);
   if (!cur || seq.length < cur.length || (seq.length === cur.length && seq < cur)) shingetsuSeq.set(kana, seq);
 }

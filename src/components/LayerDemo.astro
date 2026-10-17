@@ -8,7 +8,7 @@ import KeyboardGeometry from "./KeyboardGeometry.astro";
     <div class="section-heading" data-reveal>
       <p class="section-index" aria-hidden="true">02 / STRUCTURE</p>
       <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
-        3層構造でかなを完全収録
+        3層構造で、かなを30キーに収める
       </h2>
       <p class="text-slate-400 max-w-xl mx-auto">
         レイヤーを切り替えて、各キーに割り当てられたかな文字を確認できます。
@@ -62,6 +62,25 @@ import KeyboardGeometry from "./KeyboardGeometry.astro";
     <p class="text-center text-xs text-slate-500 mt-4">
       青色はホームポジション（人差し指〜小指）を基点とするキー
     </p>
+
+    <dl class="mt-6 max-w-[740px] mx-auto space-y-3 text-xs sm:text-sm leading-relaxed text-slate-400">
+      <div>
+        <dt class="font-medium text-slate-300">Layer 1（かな）</dt>
+        <dd>そのまま打つ（1 打）</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-300">Layer 2（拡張）</dt>
+        <dd>☆ または ★ を先に打つ（2 打）。左手側のかなは ☆、右手側のかなは ★</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-300">Layer 3（☆゛）</dt>
+        <dd>☆ → ゛ → キー（3 打）。どの列も上から ょ・ゅ・ゃ。左手は濁拗音 12 個（ぴ・び・じ・ぎ の列）、右手は み と ち の列の 6 個（みゃ・ちゃ など）。でぃ・でゅ・ぢゃ に短縮はなく、で ＋ ぃ・で ＋ ゅ・ぢ ＋ ゃ と打ちます</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-300">濁音・半濁音・小書き</dt>
+        <dd>図にはありません。清音のあとに ゛ を打ちます（が = か → ゛、ぱ = は → ゛ → ゛）</dd>
+      </div>
+    </dl>
     </div>
   </div>
 </section>
