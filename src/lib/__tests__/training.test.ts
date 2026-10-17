@@ -32,7 +32,8 @@ describe("TrainingRun", () => {
   it("accepts the ☆゛ shortcut and the long way for 濁拗音, hinting the shortcut first", () => {
     const passage = { id: "t", text: "邪魔", reading: "じゃま", topic: "", stage: 4, benchmark: false };
     expect(tokenize("じゃ")[0].paths[0]).toBe("klc");
-    expect(tokenize("みゃ")[0].paths[0]).toBe("klh");
+    expect(tokenize("みゃ")[0].paths[0]).toBe("kl,");
+    expect(tokenize("ちゃ")[0].paths[0]).toBe("kl/");
     const short = new TrainingRun([passage]);
     for (const [index, key] of ["k", "l", "c"].entries()) expect(short.press(key, index * 100)).toBe(true);
     expect(short.completed).toBe(2);
@@ -41,6 +42,28 @@ describe("TrainingRun", () => {
     for (const [index, key] of ["e", "l", "k", "b"].entries()) expect(long.press(key, index * 100)).toBe(true);
     expect(long.completed).toBe(2);
     expect(long.errors).toBe(0);
+  });
+});
+
+describe("tokenize with the v9.0 ☆゛ columns", () => {
+  it("lists the ち-column and み-column shortcuts as one-unit paths", () => {
+    for (const [kana, shortcut] of [["ちょ", "klp"], ["ちゅ", "kl;"], ["ちゃ", "kl/"], ["みょ", "kli"], ["みゅ", "klk"], ["みゃ", "kl,"]]) {
+      expect(tokenize(kana).map((token): string => token.text), kana).toEqual([kana]);
+      expect(tokenize(kana)[0].paths, kana).toContain(shortcut);
+    }
+  });
+
+  it("hints ち＋ょ and み＋ょ before the equally short shortcut, because ょ is a single key", () => {
+    expect(tokenize("ちょ")[0].paths.slice(0, 2)).toEqual(["d;t", "klp"]);
+    expect(tokenize("みょ")[0].paths.slice(0, 2)).toEqual(["dit", "kli"]);
+  });
+
+  it("no longer has a ☆゛ shortcut for でぃ・でゅ・ぢゃ: they are で＋ぃ・で＋ゅ・ぢ＋ゃ", () => {
+    expect(tokenize("でぃ").map((token): string => token.text)).toEqual(["でぃ"]);
+    expect(tokenize("でぃ")[0].paths).toEqual(["rlil"]);
+    expect(tokenize("でゅ")[0].paths[0]).toBe("rlkv");
+    expect(tokenize("ぢゃ")[0].paths[0]).toBe("d;lkb");
+    for (const path of ["klt", "klg", "klb"]) expect(tokenize("でぃでゅぢゃ").flatMap((token): string[] => token.paths)).not.toContain(path);
   });
 });
 

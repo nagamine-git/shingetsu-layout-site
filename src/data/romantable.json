@@ -1,5 +1,5 @@
 {
-  "_source": "Generated from shingetsu-layout/shingetsu-romantable.txt (canonical). d=★前置, k=☆前置, l=゛濁点, ll=゜半濁点. 2026-09-25: 前置シフト面のかなに ゛ や拗音を付けた 3〜4 打の並びを、実際の打鍵順（シフト → 文字 → ゛ など）に修正。ち系は d; 起点に修正。 2026-09-25: や/ゆ/よ/わ + ゛ で ゃ/ゅ/ょ/ゎ を追加（専用キーはそのまま）。 2026-09-26: みゃ/みゅ/みょ の短縮を ★゛（dl+h/j/k）から ☆゛（kl+h/j/k）に統一（TSV・Karabiner と一致）。",
+  "_source": "Generated from shingetsu-layout/shingetsu-romantable.txt (canonical; v2.0.0 = 新月配列 v9.0, main fbdd1f8). d=★前置, k=☆前置, l=゛濁点, ll=゜半濁点. table = 配列の列そのもの（かな → 最短の打鍵列を求めるときはここだけを見る）。aliases = 同じかなを別の列でも打てる行（- kk dd。generate_romantable.py の EXTRA_RULES）。completions = Google 日本語入力が途中の接頭辞で止まらないための補完行（next は 3 列目の「次の入力」）。aliases と completions は打鍵列の候補に入れない。",
   "table": {
     ",": "、",
     ".": "。",
@@ -85,7 +85,6 @@
     "ckb": "にゃ",
     "ckv": "にゅ",
     "d;l": "ぢ",
-    "d;t": "ちょ",
     "djl": "ぉ",
     "dll": "ゎ",
     "dol": "ゃ",
@@ -97,21 +96,20 @@
     "kcl": "ぜ",
     "kel": "ぼ",
     "kgl": "ょ",
+    "kl,": "みゃ",
+    "kl/": "ちゃ",
+    "kl;": "ちゅ",
     "kla": "ぴゅ",
-    "klb": "ぢゃ",
     "klc": "じゃ",
     "kld": "じゅ",
     "kle": "じょ",
     "klf": "ぎゅ",
-    "klg": "でゅ",
-    "klh": "みゃ",
-    "klj": "みゅ",
-    "klk": "みょ",
-    "kll": ";",
+    "kli": "みょ",
+    "klk": "みゅ",
+    "klp": "ちょ",
     "klq": "ぴょ",
     "klr": "ぎょ",
     "kls": "びゅ",
-    "klt": "でぃ",
     "klv": "ぎゃ",
     "klw": "びょ",
     "klx": "びゃ",
@@ -124,8 +122,6 @@
     "pkb": "りゃ",
     "pkv": "りゅ",
     "rlt": "でょ",
-    "d;kb": "ちゃ",
-    "d;kv": "ちゅ",
     "d;lt": "ぢょ",
     "kell": "ぽ",
     "krll": "ぷ",
@@ -133,7 +129,48 @@
     "kwkv": "ひゅ",
     "kwll": "ぴ",
     "kxll": "ぺ",
+    "rlil": "でぃ",
     "rlkb": "でゃ",
+    "rlkv": "でゅ",
+    "d;lkb": "ぢゃ",
     "d;lkv": "ぢゅ"
+  },
+  "aliases": {
+    "-": "ー",
+    "dd": "ら",
+    "kk": "も"
+  },
+  "completions": {
+    ";k": {
+      "kana": "き",
+      "next": "k"
+    },
+    "ck": {
+      "kana": "に",
+      "next": "k"
+    },
+    "ek": {
+      "kana": "し",
+      "next": "k"
+    },
+    "pk": {
+      "kana": "り",
+      "next": "k"
+    },
+    "kwk": {
+      "kana": "ひ",
+      "next": "k"
+    },
+    "rlk": {
+      "kana": "で",
+      "next": "k"
+    },
+    "d;lk": {
+      "kana": "ぢ",
+      "next": "k"
+    },
+    "rli": {
+      "kana": "でい"
+    }
   }
 }
